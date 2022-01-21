@@ -27,8 +27,8 @@ let world_boxel_id = 0;
 
 console.log(boxels);
 
-let width = 800;
-let height = 500;
+let width = 1000;
+let height = 600;
 
 let camera = new Camera(width, height)
 camera.position = [1,1,1];
