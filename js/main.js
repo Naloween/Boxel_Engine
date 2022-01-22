@@ -1,27 +1,31 @@
 
 // Materials
 let air_material = new Material([0.1,0.1,0.6], 0.9, 0, 1);
-let red_material = new Material([1.0,0,0], 0.0, 0, 1);
-let mirror_material = new Material([0,1.0,0], 0., 1.0, 1);
+let red_material = new Material([1.0,0,0], 0.3, 0, 1);
+let mirror_material = new Material([0,1.0,0], 1., 0.5, 1);
 let glass_material = new Material([1.,0.,1.], 0.5, 0.0, 1.1);
+let ground_material = new Material([0.7,0.7,0.7], 0., 0.0, 1.);
 
 let materials = [];
 materials.push(air_material.toArray());
 materials.push(red_material.toArray());
 materials.push(mirror_material.toArray());
 materials.push(glass_material.toArray());
+materials.push(ground_material.toArray());
 
 // Boxels
-let world_boxel = new Boxel([0,0,0], [20,20,20], 0, -1, [1, 2, 3, -1]);
-let red_cube = new Boxel([2,2,2], [1,2,3], 1, 0, [-1, -1, -1, -1])
-let mirror = new Boxel([5,2,2], [1,1,0.1], 2, 0, [-1, -1, -1, -1])
-let glass = new Boxel([3.5,3.5,2], [0.1,2,2], 3, 0, [-1, -1, -1, -1])
+let world_boxel = new Boxel([0,0,0], [50,50,50], [1,1,1], 0, -1, [1, 2, 3, 4]);
+let red_cube = new Boxel([22,22,22], [1,2,3], [1,1,1], 1, 0, [-1, -1, -1, -1])
+let mirror = new Boxel([25,22,22], [1,1,0.1], [1,1,1], 2, 0, [-1, -1, -1, -1])
+let glass = new Boxel([23.5,23.5,22], [0.1,2,2], [1,1,1], 3, 0, [-1, -1, -1, -1])
+let ground = new Boxel([10.,10.,20.], [20,20,0.5], [1,1,1], 4, 0, [-1, -1, -1, -1])
 
 let boxels = [];
 boxels.push(world_boxel.toArray());
 boxels.push(red_cube.toArray());
 boxels.push(mirror.toArray());
 boxels.push(glass.toArray());
+boxels.push(ground.toArray());
 
 let world_boxel_id = 0;
 
@@ -31,7 +35,7 @@ let width = 1000;
 let height = 600;
 
 let camera = new Camera(width, height)
-camera.position = [1,1,1];
+camera.position = [20,20,20];
 camera.drawFrame(boxels, materials, world_boxel_id);
 //console.log(camera.fooGPU(boxels));
 
