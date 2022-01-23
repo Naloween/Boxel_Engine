@@ -177,7 +177,7 @@ function intersectionGPU(boxel_position, boxel_sizes, cast_point, direction){
 // }
 
 
-function castRayGPU(boxels, materials, ray_boxel_id, cast_point, direction){
+function castRayGPU(boxels, materials, ray_boxel_id, cast_point, direction, channel){
 
     // for ray in rays{
     //     while (nb_steps < 10){
@@ -191,7 +191,7 @@ function castRayGPU(boxels, materials, ray_boxel_id, cast_point, direction){
 
     // return color
 
-    let color = [0.,0.,0.]
+    let color = 0.
 
     let iteration = 0;
     let next_ray = true;
@@ -268,7 +268,7 @@ function castRayGPU(boxels, materials, ray_boxel_id, cast_point, direction){
             let material_id = boxels[boxel_id][12];
 
             
-            let transparency = materials[material_id][3];
+            let transparency = materials[material_id][3 + channel];
 
             let light = 0.;
             
@@ -318,18 +318,16 @@ function castRayGPU(boxels, materials, ray_boxel_id, cast_point, direction){
                 }
             }
 
-            let diaphragme = 0.1;
+            let diaphragme = 0.2;
             let coef_diffusion = diaphragme * ray_percentage * (1. - color_percentage) * (1. - transparency**t) * light;
-            color[0] += materials[material_id][0] * coef_diffusion;
-            color[1] += materials[material_id][1] * coef_diffusion;
-            color[2] += materials[material_id][2] * coef_diffusion;
+            color += materials[material_id][channel] * coef_diffusion;
             color_percentage += ray_percentage * (1. - color_percentage) * (1. - transparency**t);
             
     
             if (potential_next_boxel_id >=0){
                 let next_material_id = boxels[potential_next_boxel_id][12];
                 //Reflect on next boxel
-                let coef_reflection = ray_percentage * (1. - color_percentage) * materials[next_material_id][4];            
+                let coef_reflection = ray_percentage * (1. - color_percentage) * materials[next_material_id][6 + channel];            
                 
                 let direction_reflection = [-current_direction[0], current_direction[1], current_direction[2]];
                 if (face == 2 || face == 3) {
@@ -355,8 +353,8 @@ function castRayGPU(boxels, materials, ray_boxel_id, cast_point, direction){
                 // Refraction
                 //n1sin(i) = n2sin(r)
                 
-                let n1 = materials[material_id][5];
-                let n2 = materials[next_material_id][5];
+                let n1 = materials[material_id][9 + channel];
+                let n2 = materials[next_material_id][9 + channel];
                 if (n2 != n1) {
                     let normale = [1., 0., 0.];
                     if (face == 2 || face == 3){
@@ -430,13 +428,15 @@ function renderGPU(boxels, materials, width, height, fov, u, ux, uy, position, b
     let n = Math.sqrt(direction[0]*direction[0] + direction[1]*direction[1] + direction[2]*direction[2]);
     direction = [direction[0]/n, direction[1]/n, direction[2]/n]
 
-    let color = castRayGPU(boxels, materials, boxel_id, [position[0], position[1], position[2]], direction);
-    this.color(color[0], color[1], color[2], 1)
+    let r = castRayGPU(boxels, materials, boxel_id, [position[0], position[1], position[2]], direction, 0);
+    let g = castRayGPU(boxels, materials, boxel_id, [position[0], position[1], position[2]], direction, 1);
+    let b = castRayGPU(boxels, materials, boxel_id, [position[0], position[1], position[2]], direction, 2);
+    this.color(r, g, b, 1)
 }
 
 
 class Material{
-    constructor(diffusion = [0,0,0], transparency, reflection=0.0, refraction=1){
+    constructor(diffusion, transparency, reflection, refraction){
         this.diffusion = diffusion; // diffusion pour chaque couleur, entre 0 (transparent) et 1 (opaque)
         this.transparency = transparency;
         this.reflection = reflection; // entre 0 et 1
@@ -445,7 +445,10 @@ class Material{
     }
 
     toArray(){
-        let result = [this.diffusion[0], this.diffusion[1], this.diffusion[2], this.transparency, this.reflection, this.refraction]
+        let result = [this.diffusion[0], this.diffusion[1], this.diffusion[2],
+        this.transparency[0], this.transparency[1], this.transparency[2],
+        this.reflection[0], this.reflection[1], this.reflection[2],
+        this.refraction[0], this.refraction[1], this.refraction[2]]
 
         return result //[r, g, b, transparency, reflection, refraction]
     }
@@ -527,5 +530,23 @@ class Camera{
             this.width, this.height, this.FOV,
             this.u, this.ux, this.uy,
             this.position, world_boxel_id);
+    }
+}
+
+class Light{
+    constructor(power, color, position, parent){
+        this.power = power;
+        this.color = color;
+        this.position = position;
+        this.parent = parent; // parent boxel: the light will have effect only of the childs of the parent boxels recursively
+    }
+}
+
+class BoxelEngine{
+    constructor(boxels, materials, camera, lights){
+        this.boxels = boxels;
+        this.materials = materials;
+        this.camera = camera;
+        this.lights = lights;
     }
 }
