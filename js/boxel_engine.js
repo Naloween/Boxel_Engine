@@ -233,7 +233,7 @@ function castRayGPU(boxels, materials, ray_boxel_id, cast_point, direction, chan
     
             //On regarde si on intercepte un boxel contenu dans le boxel courant
             for (let k=0; k<4; k++){
-                let inner_boxel_id = boxels[boxel_id][14 + k];
+                let inner_boxel_id = boxels[boxel_id][26 + k];
                 if (inner_boxel_id >= 0){
                     let res = intersectionGPU(
                         [boxels[inner_boxel_id][0], boxels[inner_boxel_id][1], boxels[inner_boxel_id][2]],
@@ -253,7 +253,7 @@ function castRayGPU(boxels, materials, ray_boxel_id, cast_point, direction, chan
             t += 0.001;
     
             if (potential_next_boxel_id < 0){
-                potential_next_boxel_id = boxels[boxel_id][13]; // set next boxel to parent boxel
+                potential_next_boxel_id = boxels[boxel_id][25]; // set next boxel to parent boxel
                 
             }
 
@@ -265,7 +265,7 @@ function castRayGPU(boxels, materials, ray_boxel_id, cast_point, direction, chan
             let next_direction = current_direction;
     
             //Pass through current boxel
-            let material_id = boxels[boxel_id][12];
+            let material_id = boxels[boxel_id][24];
 
             
             let transparency = materials[material_id][3 + channel];
@@ -274,20 +274,24 @@ function castRayGPU(boxels, materials, ray_boxel_id, cast_point, direction, chan
             
             if (transparency <= 0.){
                 let nearest_face = 0;
-                let distance_to_nearest_face = Math.abs(current_cast_point[0]-boxels[boxel_id][0]);
+                let distance_to_nearest_face = Math.abs(current_cast_point[0] - boxels[boxel_id][0]);
+
                 for (let potential_nearest_face=1; potential_nearest_face < 6; potential_nearest_face++){
-                    let F = boxels[boxel_id][potential_nearest_face/2];
-                    let add_size = potential_nearest_face%2;
+                    let F = boxels[boxel_id][potential_nearest_face / 2];
+                    let add_size = potential_nearest_face % 2;
+
                     if ( add_size == 1){
-                        F += boxels[boxel_id][3 + potential_nearest_face/2]; //ajout de la size
+                        F += boxels[boxel_id][3 + potential_nearest_face / 2]; //ajout de la size
                     }
-                    let distance_to_face = Math.abs(current_cast_point[potential_nearest_face/2]-F);
+
+                    let distance_to_face = Math.abs(current_cast_point[potential_nearest_face / 2] - F);
                     if (distance_to_face < distance_to_nearest_face){
                         distance_to_nearest_face = distance_to_face;
                         nearest_face = potential_nearest_face;
                     }
                 }
-                light = boxels[boxel_id][6 + nearest_face];
+                light = boxels[boxel_id][6 + 6 * channel + nearest_face];
+
             } else {
                 for (let dir=0; dir< 6; dir++){
                     let index_direction = dir/2;
@@ -296,7 +300,7 @@ function castRayGPU(boxels, materials, ray_boxel_id, cast_point, direction, chan
                     if ( add_size == 1){
                         F += boxels[boxel_id][3 + index_direction] //ajout de la size
                     }
-                    let A = boxels[boxel_id][6 + dir];
+                    let A = boxels[boxel_id][6 + 6 * channel + dir]; //light on face
     
                     let d = F - next_cast_point[index_direction];
                     let d0 = F - current_cast_point[index_direction];
@@ -317,15 +321,13 @@ function castRayGPU(boxels, materials, ray_boxel_id, cast_point, direction, chan
                     }
                 }
             }
-
-            let diaphragme = 0.2;
-            let coef_diffusion = diaphragme * ray_percentage * (1. - color_percentage) * (1. - transparency**t) * light;
+            let coef_diffusion = ray_percentage * (1. - color_percentage) * (1. - transparency**t) * light;
             color += materials[material_id][channel] * coef_diffusion;
             color_percentage += ray_percentage * (1. - color_percentage) * (1. - transparency**t);
             
     
-            if (potential_next_boxel_id >=0){
-                let next_material_id = boxels[potential_next_boxel_id][12];
+            if (potential_next_boxel_id >= 0){
+                let next_material_id = boxels[potential_next_boxel_id][24];
                 //Reflect on next boxel
                 let coef_reflection = ray_percentage * (1. - color_percentage) * materials[next_material_id][6 + channel];            
                 
@@ -416,7 +418,7 @@ function castRayGPU(boxels, materials, ray_boxel_id, cast_point, direction, chan
 }
 
 
-function renderGPU(boxels, materials, width, height, fov, u, ux, uy, position, boxel_id){
+function renderGPU(boxels, materials, width, height, fov, u, ux, uy, position, boxel_id, diaphragme){
     
     
     let dx = fov * (this.thread.x - width/2) ;
@@ -431,7 +433,7 @@ function renderGPU(boxels, materials, width, height, fov, u, ux, uy, position, b
     let r = castRayGPU(boxels, materials, boxel_id, [position[0], position[1], position[2]], direction, 0);
     let g = castRayGPU(boxels, materials, boxel_id, [position[0], position[1], position[2]], direction, 1);
     let b = castRayGPU(boxels, materials, boxel_id, [position[0], position[1], position[2]], direction, 2);
-    this.color(r, g, b, 1)
+    this.color(diaphragme * r, diaphragme * g, diaphragme * b, 1)
 }
 
 
@@ -468,6 +470,8 @@ class Boxel{
         let result = [this.position[0], this.position[1], this.position[2],
                     this.sizes[0], this.sizes[1], this.sizes[2],
                     this.lighting[0], this.lighting[1], this.lighting[2], this.lighting[3], this.lighting[4], this.lighting[5],
+                    this.lighting[6], this.lighting[7], this.lighting[8], this.lighting[9], this.lighting[10], this.lighting[11],
+                    this.lighting[12], this.lighting[13], this.lighting[14], this.lighting[15], this.lighting[16], this.lighting[17],
                     this.material_id,
                     this.parent_boxel,
                     this.inner_boxels[0], this.inner_boxels[1], this.inner_boxels[2],this.inner_boxels[3]]
@@ -486,6 +490,7 @@ class Camera{
         this.phi = Math.PI/2.0;
 
         this.FOV = 0.001;
+        this.diaphragme = 0.1;
         this.render_distance = 1000.0;
 
         this.u = new Array(3);
@@ -525,11 +530,11 @@ class Camera{
             this.u[0] * this.uy[1] - this.u[1] * this.uy[0]];
     }
 
-    drawFrame(boxels, materials, world_boxel_id){
+    drawFrame(boxels, materials, boxel_id){
         this.render(boxels, materials,
             this.width, this.height, this.FOV,
             this.u, this.ux, this.uy,
-            this.position, world_boxel_id);
+            this.position, boxel_id, this.diaphragme);
     }
 }
 
@@ -548,5 +553,37 @@ class BoxelEngine{
         this.materials = materials;
         this.camera = camera;
         this.lights = lights;
+
+        this.current_boxel_id = 0;
+
+        this.process_lights();
+    }
+
+    render(){
+        this.camera.drawFrame(this.boxels, this.materials, this.current_boxel_id);
+    }
+
+    process_lights(){
+        for (let light of this.lights){
+            for (let boxel of this.boxels){
+                for (let channel=0; channel < 3; channel++){
+                    for (let face=0; face < 6; face++){
+                        let normale = [0,0,0];
+                        normale[face / 2] = 2 * (face % 2) - 1;
+
+                        let P = [boxel[0],boxel[1],boxel[2]];
+
+                        let u = substract(light.position, P);
+                        let d = Math.sqrt(scal(u, u));
+                        u = mul(1/d, u);
+
+                        let coef = scal(normale, u)/(d*d);
+                        if (coef >=0){
+                            boxel[6 + face + 6 * channel] = light.power * light.color[channel] * coef;
+                        }
+                    }
+                }
+            }
+        }
     }
 }

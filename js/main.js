@@ -5,7 +5,7 @@ let air_material = new Material([0.,0.0,0.5], // Diffusion, i.e color
                                 [0, 0, 0], // Reflection percentage
                                 [1, 1, 1]); // Refraction indice
 let red_material = new Material([1.,0.0,0.],
-                                [0., 0., 0],
+                                [0.2, 0.2, 0.2],
                                 [0, 0, 0],
                                 [1, 1, 1]);
 let mirror_material = new Material([1.,1.0,1.],
@@ -29,12 +29,17 @@ materials.push(glass_material.toArray());
 materials.push(ground_material.toArray());
 
 // Boxels
-let world_boxel = new Boxel([0,0,0], [50,50,50], [1,0,0,0,0,0], 0, -1, [1, 2, 3, 4]);
-let red_cube = new Boxel([22,22,22], [1,2,3], [5,0.5,10,1,0,0], 1, 0, [-1, -1, -1, -1])
-let mirror = new Boxel([25,22,22], [1,1,0.1], [0,0,0,0,0,0], 2, 0, [-1, -1, -1, -1])
-let glass = new Boxel([23.5,23.5,22], [0.1,2,2], [0,0,0,0,0,0], 3, 0, [-1, -1, -1, -1])
-let cloud = new Boxel([10.,10.,15.], [20,20,3], [1,1,1,1,1,1], 4, 0, [5, -1, -1, -1])
-let littlecube = new Boxel([20,20,16], [2,1,0.1], [1,1,1,1,1,1], 1, 4, [-1, -1, -1, -1])
+let world_boxel = new Boxel([0,0,0], // position
+                            [50,50,50], // sizes
+                            [1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0], // lightning for each face and each channel (r,g,b)
+                            0, // material id
+                            -1, //parent boxel
+                            [1, 2, 3, 4]); // inner boxels
+let red_cube = new Boxel([22,22,22], [1,2,3], [5,0,10,1,0,0,1,0,0,0,0,0,1,0,0,0,0,0], 1, 0, [-1, -1, -1, -1])
+let mirror = new Boxel([25,22,22], [1,1,0.1], [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], 2, 0, [-1, -1, -1, -1])
+let glass = new Boxel([23.5,23.5,22], [0.1,2,2], [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], 3, 0, [-1, -1, -1, -1])
+let cloud = new Boxel([10.,10.,15.], [20,20,3], [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1], 4, 0, [5, -1, -1, -1])
+let littlecube = new Boxel([20,20,16], [2,1,0.1], [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1], 1, 4, [-1, -1, -1, -1])
 
 let boxels = [];
 boxels.push(world_boxel.toArray());
@@ -44,17 +49,17 @@ boxels.push(glass.toArray());
 boxels.push(cloud.toArray());
 boxels.push(littlecube.toArray());
 
+console.log(boxels);
+
 let world_boxel_id = 0;
 
 let width = 1000;
-let height = 500;
+let height = 600;
 
 let camera = new Camera(width, height)
 camera.position = [20,20,20];
-camera.drawFrame(boxels, materials, world_boxel_id);
-//console.log(camera.fooGPU(boxels));
 
-let lights = [new Light(10, [1., 1., 1.], [10,10,10], 0)];
+let lights = [new Light(10, [1., 1., 1.], [20,20,25], 0)];
 
 let boxel_engine = new BoxelEngine(boxels, materials, camera, lights);
 
@@ -192,7 +197,7 @@ function nextFrame(timestamp){
 
     //draw frame
     camera.update();
-    camera.drawFrame(boxels, materials, world_boxel_id);
+    boxel_engine.render();
 
     window.requestAnimationFrame(nextFrame);
 }
