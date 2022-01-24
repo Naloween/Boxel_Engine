@@ -1,18 +1,18 @@
 
 // Materials
-let air_material = new Material([0.,0.0,0.5], // Diffusion, i.e color
-                                [0.99, 0.99, 0.99], // Transparency percentage
+let air_material = new Material([1.,1.,1.], // Diffusion, i.e color
+                                [0.99, 0.99, 0.95], // Transparency percentage
                                 [0, 0, 0], // Reflection percentage
                                 [1, 1, 1]); // Refraction indice
 let red_material = new Material([1.,0.0,0.],
-                                [0.2, 0.2, 0.2],
+                                [0, 0, 0],
                                 [0, 0, 0],
                                 [1, 1, 1]);
 let mirror_material = new Material([1.,1.0,1.],
                                 [0,0,0],
                                 [1.,1.0,1.0],
                                 [1, 1, 1]);
-let glass_material = new Material([0.5,0.0,0.5],
+let glass_material = new Material([1.,0.0,1.],
                                 [0.5, 0.5, 0.5],
                                 [0, 0, 0],
                                 [1.1, 1.2, 1.3]);
@@ -34,12 +34,13 @@ let world_boxel = new Boxel([0,0,0], // position
                             [1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0], // lightning for each face and each channel (r,g,b)
                             0, // material id
                             -1, //parent boxel
-                            [1, 2, 3, 4]); // inner boxels
-let red_cube = new Boxel([22,22,22], [1,2,3], [5,0,10,1,0,0,1,0,0,0,0,0,1,0,0,0,0,0], 1, 0, [-1, -1, -1, -1])
-let mirror = new Boxel([25,22,22], [1,1,0.1], [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], 2, 0, [-1, -1, -1, -1])
-let glass = new Boxel([23.5,23.5,22], [0.1,2,2], [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], 3, 0, [-1, -1, -1, -1])
-let cloud = new Boxel([10.,10.,15.], [20,20,3], [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1], 4, 0, [5, -1, -1, -1])
-let littlecube = new Boxel([20,20,16], [2,1,0.1], [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1], 1, 4, [-1, -1, -1, -1])
+                            [1, 2, 3, 4], // inner boxels
+                            0); // Light
+let red_cube = new Boxel([22,22,22], [1,2,3], [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], 1, 0, [-1, -1, -1, -1],-1)
+let mirror = new Boxel([25,22,22], [1,1,0.1], [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], 2, 0, [-1, -1, -1, -1],-1)
+let glass = new Boxel([23.5,23.5,22], [0.1,2,2], [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], 3, 0, [-1, -1, -1, -1],-1)
+let cloud = new Boxel([10.,10.,15.], [20,20,3], [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], 4, 0, [5, -1, -1, -1],-1)
+let littlecube = new Boxel([20,20,16], [2,1,0.1], [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], 1, 4, [-1, -1, -1, -1],-1)
 
 let boxels = [];
 boxels.push(world_boxel.toArray());
@@ -57,9 +58,9 @@ let width = 1000;
 let height = 600;
 
 let camera = new Camera(width, height)
-camera.position = [20,20,20];
+camera.position = [20,20,25];
 
-let lights = [new Light(10, [1., 1., 1.], [20,20,25], 0)];
+let lights = [new Light(1, [1., 1., 1.], [30,20,30], 0).toArray()];
 
 let boxel_engine = new BoxelEngine(boxels, materials, camera, lights);
 

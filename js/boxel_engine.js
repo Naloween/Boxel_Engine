@@ -177,7 +177,7 @@ function intersectionGPU(boxel_position, boxel_sizes, cast_point, direction){
 // }
 
 
-function castRayGPU(boxels, materials, ray_boxel_id, cast_point, direction, channel){
+function castRayGPU(boxels, materials, lights, ray_boxel_id, cast_point, direction, channel){
 
     // for ray in rays{
     //     while (nb_steps < 10){
@@ -290,9 +290,40 @@ function castRayGPU(boxels, materials, ray_boxel_id, cast_point, direction, chan
                         nearest_face = potential_nearest_face;
                     }
                 }
-                light = boxels[boxel_id][6 + 6 * channel + nearest_face];
+                light += boxels[boxel_id][6 + 6 * channel + nearest_face];
 
             } else {
+
+                let id_light = boxels[boxel_id][30];
+
+                if (id_light >= 0){ // Si le boxel possède une source de lumière
+                    let vx = current_direction[0];
+                    let vy = current_direction[1];
+                    let vz = current_direction[2];
+                    let px = current_cast_point[0];
+                    let py = current_cast_point[1];
+                    let pz = current_cast_point[2];
+                    let lx = lights[id_light][4];
+                    let ly = lights[id_light][5];
+                    let lz = lights[id_light][6];
+    
+                    let D = lx*lx * vy*vy + lx*lx * vz*vz
+                            - 2*ly * (vy*(lx*vx + lz*vz - px*vx - pz*vz) + py*(vx*vx+vz*vz))
+                            - 2*lz * (vz*(lx*vx - px*vx - py*vy) + pz*(vx*vx+vy*vy))
+                            - 2*lx*px*vy*vy - 2*lx*px*vz*vz + 2*lx*py*vx*vy + 2*lx*pz*vx*vz
+                            + ly*ly * (vx*vx+vz*vz) + lz*lz * (vx*vx+vy*vy)
+                            + px*px*vy*vy + px*px*vz*vz + py*py*vx*vx + py*py*vz*vz + pz*pz*vx*vx + pz*pz*vy*vy
+                            - 2*(px*py*vx*vy + px*pz*vx*vz + py*pz*vy*vz);
+                    D = Math.sqrt(D);
+    
+                    let C = px*vx+py*vy+pz*vz - lx*vx-ly*vy-lz*vz;
+    
+                    // D = 1;
+                    // C = -10;
+
+                    light += lights[id_light][0] * (Math.atan((C + t * (vx*vx + vy*vy + vz*vz))/D) / D - Math.atan(C/D)/D);
+                }
+                
                 for (let dir=0; dir< 6; dir++){
                     let index_direction = dir/2;
                     let F = boxels[boxel_id][index_direction];
@@ -418,7 +449,7 @@ function castRayGPU(boxels, materials, ray_boxel_id, cast_point, direction, chan
 }
 
 
-function renderGPU(boxels, materials, width, height, fov, u, ux, uy, position, boxel_id, diaphragme){
+function renderGPU(boxels, materials, lights, width, height, fov, u, ux, uy, position, boxel_id, diaphragme){
     
     
     let dx = fov * (this.thread.x - width/2) ;
@@ -430,9 +461,9 @@ function renderGPU(boxels, materials, width, height, fov, u, ux, uy, position, b
     let n = Math.sqrt(direction[0]*direction[0] + direction[1]*direction[1] + direction[2]*direction[2]);
     direction = [direction[0]/n, direction[1]/n, direction[2]/n]
 
-    let r = castRayGPU(boxels, materials, boxel_id, [position[0], position[1], position[2]], direction, 0);
-    let g = castRayGPU(boxels, materials, boxel_id, [position[0], position[1], position[2]], direction, 1);
-    let b = castRayGPU(boxels, materials, boxel_id, [position[0], position[1], position[2]], direction, 2);
+    let r = castRayGPU(boxels, materials, lights, boxel_id, [position[0], position[1], position[2]], direction, 0);
+    let g = castRayGPU(boxels, materials, lights, boxel_id, [position[0], position[1], position[2]], direction, 1);
+    let b = castRayGPU(boxels, materials, lights, boxel_id, [position[0], position[1], position[2]], direction, 2);
     this.color(diaphragme * r, diaphragme * g, diaphragme * b, 1)
 }
 
@@ -457,24 +488,26 @@ class Material{
 }
 
 class Boxel{
-    constructor(position, sizes, lighting, material_id, parent_boxel, inner_boxels){
+    constructor(position, sizes, lighting, material_id, parent_boxel, inner_boxels, light){
         this.position = position;
         this.sizes = sizes;
         this.lighting = lighting; // each face has an amount of light, we store only the flux i.e amount of light / surface
         this.material_id = material_id; // id of material
         this.parent_boxel = parent_boxel;
         this.inner_boxels = inner_boxels; // ids of inner boxels
+        this.light = light;
     }
 
     toArray(){
-        let result = [this.position[0], this.position[1], this.position[2],
-                    this.sizes[0], this.sizes[1], this.sizes[2],
-                    this.lighting[0], this.lighting[1], this.lighting[2], this.lighting[3], this.lighting[4], this.lighting[5],
+        let result = [this.position[0], this.position[1], this.position[2], //0
+                    this.sizes[0], this.sizes[1], this.sizes[2], //3
+                    this.lighting[0], this.lighting[1], this.lighting[2], this.lighting[3], this.lighting[4], this.lighting[5], //6
                     this.lighting[6], this.lighting[7], this.lighting[8], this.lighting[9], this.lighting[10], this.lighting[11],
                     this.lighting[12], this.lighting[13], this.lighting[14], this.lighting[15], this.lighting[16], this.lighting[17],
-                    this.material_id,
-                    this.parent_boxel,
-                    this.inner_boxels[0], this.inner_boxels[1], this.inner_boxels[2],this.inner_boxels[3]]
+                    this.material_id, //24
+                    this.parent_boxel, //25
+                    this.inner_boxels[0], this.inner_boxels[1], this.inner_boxels[2],this.inner_boxels[3], //26
+                    this.light] // 30
 
         return result //[posx, posy, posz, sizex, sizey, sizez, lightnings, material_id, parent_boxel, boxelid1, boxelid2, boxelid3, boxelid4]
     }
@@ -490,7 +523,7 @@ class Camera{
         this.phi = Math.PI/2.0;
 
         this.FOV = 0.001;
-        this.diaphragme = 0.1;
+        this.diaphragme = 1;
         this.render_distance = 1000.0;
 
         this.u = new Array(3);
@@ -530,8 +563,8 @@ class Camera{
             this.u[0] * this.uy[1] - this.u[1] * this.uy[0]];
     }
 
-    drawFrame(boxels, materials, boxel_id){
-        this.render(boxels, materials,
+    drawFrame(boxels, materials, lights, boxel_id){
+        this.render(boxels, materials, lights,
             this.width, this.height, this.FOV,
             this.u, this.ux, this.uy,
             this.position, boxel_id, this.diaphragme);
@@ -544,6 +577,15 @@ class Light{
         this.color = color;
         this.position = position;
         this.parent = parent; // parent boxel: the light will have effect only of the childs of the parent boxels recursively
+    }
+
+    toArray(){
+        return [
+            this.power, //0
+            this.color[0], this.color[1], this.color[2], //1
+            this.position[0], this.position[1], this.position[2], //4
+            this.parent //7
+        ];
     }
 }
 
@@ -560,26 +602,50 @@ class BoxelEngine{
     }
 
     render(){
-        this.camera.drawFrame(this.boxels, this.materials, this.current_boxel_id);
+        this.camera.drawFrame(this.boxels, this.materials, this.lights, this.current_boxel_id);
     }
 
     process_lights(){
+
+        // Initialisation des lights à 0
+        for (let boxel of boxels){
+            for (let channel=0; channel < 3; channel++){
+                for (let face=0; face < 6; face++){
+                    boxel[6 + face + 6 * channel] = 0;
+                }
+            }
+        }
+
+        // Ajout de la lumière pour chaque lumière et boxel concerné
         for (let light of this.lights){
-            for (let boxel of this.boxels){
+            for (let k=0; k<4; k++){
+                let boxel_id = boxels[light[7]][26 + k];
+                let boxel = boxels[boxel_id];
                 for (let channel=0; channel < 3; channel++){
                     for (let face=0; face < 6; face++){
+                        let direction = Math.floor(face / 2);
                         let normale = [0,0,0];
-                        normale[face / 2] = 2 * (face % 2) - 1;
+                        if (face % 2 == 1){
+                            normale[direction] = 1;
+                        } else {
+                            normale[direction] = -1
+                        }
 
-                        let P = [boxel[0],boxel[1],boxel[2]];
+                        let P = [boxel[0] + boxel[3]/2, boxel[1] + boxel[4]/2, boxel[2] + boxel[5]/2];
 
-                        let u = substract(light.position, P);
+                        if (face%2 == 1){
+                            P[direction] += boxel[3 + direction]/2;
+                        } else {
+                            P[direction] -= boxel[3 + direction]/2;
+                        }
+
+                        let u = substract([light[4], light[5], light[6]], P);
                         let d = Math.sqrt(scal(u, u));
                         u = mul(1/d, u);
 
-                        let coef = scal(normale, u)/(d*d);
+                        let coef = scal(normale, u);
                         if (coef >=0){
-                            boxel[6 + face + 6 * channel] = light.power * light.color[channel] * coef;
+                            boxel[6 + face + 6 * channel] += coef * light[0] * light[1 + channel]/(d*d);
                         }
                     }
                 }
