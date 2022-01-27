@@ -195,23 +195,24 @@ function castRayGPU(boxels, materials, lights, ray_boxel_id, cast_point, directi
 
     let iteration = 0;
     let next_ray = true;
-    let ray_percentage = 1;
-    let ray_cast_point = cast_point;
-    let ray_direction = direction;
+    let next_ray_boxel_id = ray_boxel_id;
+    let next_ray_percentage = 1;
+    let next_ray_cast_point = cast_point;
+    let next_ray_direction = direction;
     
     while ( next_ray && iteration < 3){
         next_ray = false;
-        let boxel_id = ray_boxel_id;
+        let boxel_id = next_ray_boxel_id;
+        let ray_percentage = next_ray_percentage;
 
         if (boxel_id < 0){
             break;
         }
 
-        let current_cast_point = ray_cast_point;
-        let current_direction = ray_direction;
+        let current_cast_point = next_ray_cast_point;
+        let current_direction = next_ray_direction;
         let distance = 0.;
         let nb_steps = 0;
-        let color_percentage = 0.;
 
         while (nb_steps < 10) {
         
@@ -253,8 +254,7 @@ function castRayGPU(boxels, materials, lights, ray_boxel_id, cast_point, directi
             t += 0.001;
     
             if (potential_next_boxel_id < 0){
-                potential_next_boxel_id = boxels[boxel_id][25]; // set next boxel to parent boxel
-                
+                potential_next_boxel_id = boxels[boxel_id][25]; // set next boxel to parent boxel  
             }
 
             //Point d'arrivée du ray
@@ -292,6 +292,8 @@ function castRayGPU(boxels, materials, lights, ray_boxel_id, cast_point, directi
                 }
                 light += boxels[boxel_id][6 + 6 * channel + nearest_face];
 
+            } else if(transparency >= 1.) {
+                light = 0.0;
             } else {
 
                 let id_light = boxels[boxel_id][30];
@@ -333,9 +335,9 @@ function castRayGPU(boxels, materials, lights, ray_boxel_id, cast_point, directi
                     }
                     let A = boxels[boxel_id][6 + 6 * channel + dir]; //light on face
     
-                    let d = F - next_cast_point[index_direction];
+                    let d = F - current_cast_point[index_direction] - t * (current_direction[index_direction] - 1);
                     let d0 = F - current_cast_point[index_direction];
-                    let den = Math.log(transparency) * Math.abs(current_direction[index_direction]);
+                    let den = Math.log(transparency) * Math.abs(current_direction[index_direction] - 1);
     
                     if (d < 0){
                         if (d0 < 0){
@@ -352,15 +354,22 @@ function castRayGPU(boxels, materials, lights, ray_boxel_id, cast_point, directi
                     }
                 }
             }
-            let coef_diffusion = ray_percentage * (1. - color_percentage) * (1. - transparency**t) * light;
-            color += materials[material_id][channel] * coef_diffusion;
-            color_percentage += ray_percentage * (1. - color_percentage) * (1. - transparency**t);
-            
+
+            light *= ray_percentage * (1-transparency) * materials[material_id][channel] //diffusion
+            color += light;
+            ray_percentage *= transparency**t
+
+            // check ray percentage
+
+            if (ray_percentage <= 0.0) {
+                return color
+                break
+            }
     
             if (potential_next_boxel_id >= 0){
                 let next_material_id = boxels[potential_next_boxel_id][24];
                 //Reflect on next boxel
-                let coef_reflection = ray_percentage * (1. - color_percentage) * materials[next_material_id][6 + channel];            
+                let coef_reflection = ray_percentage * materials[next_material_id][6 + channel];            
                 
                 let direction_reflection = [-current_direction[0], current_direction[1], current_direction[2]];
                 if (face == 2 || face == 3) {
@@ -375,12 +384,11 @@ function castRayGPU(boxels, materials, lights, ray_boxel_id, cast_point, directi
                                             current_cast_point[1] + t_reflection * current_direction[1],
                                             current_cast_point[2] + t_reflection * current_direction[2]];
     
-                if (coef_reflection > 0.0) {
+                if (!next_ray && coef_reflection > 0.0) {
                     next_ray = true;
-                    ray_percentage = coef_reflection;
-                    ray_cast_point = cast_point_reflection;
-                    ray_direction = direction_reflection;
-                    color_percentage += coef_reflection;
+                    next_ray_percentage = coef_reflection;
+                    next_ray_cast_point = cast_point_reflection;
+                    next_ray_direction = direction_reflection;
                 }
     
                 // Refraction
@@ -423,12 +431,6 @@ function castRayGPU(boxels, materials, lights, ray_boxel_id, cast_point, directi
                         next_cast_point = cast_point_reflection;
                         potential_next_boxel_id = boxel_id;
                     }
-                }
-    
-                // Check color percentage
-    
-                if (color_percentage >= ray_percentage){
-                    break;
                 }
     
                 // Next step
@@ -645,7 +647,7 @@ class BoxelEngine{
 
                         let coef = scal(normale, u);
                         if (coef >=0){
-                            boxel[6 + face + 6 * channel] += coef * light[0] * light[1 + channel]/(d*d);
+                            boxel[6  + 6 * channel + face] += coef * light[0] * light[1 + channel]/(d*d);
                         }
                     }
                 }

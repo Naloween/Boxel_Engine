@@ -1,7 +1,7 @@
 
 // Materials
-let air_material = new Material([1.,1.,1.], // Diffusion, i.e color
-                                [0.99, 0.99, 0.95], // Transparency percentage
+let air_material = new Material([1,1,1], // Diffusion, i.e color
+                                [0.99,0.99,0.98], // Transparency percentage
                                 [0, 0, 0], // Reflection percentage
                                 [1, 1, 1]); // Refraction indice
 let red_material = new Material([1.,0.0,0.],
@@ -17,7 +17,7 @@ let glass_material = new Material([1.,0.0,1.],
                                 [0, 0, 0],
                                 [1.1, 1.2, 1.3]);
 let ground_material = new Material([1., 1., 1.],
-                                [0.5, 0.5, 0.5],
+                                [0.9, 0.9, 0.9],
                                 [0, 0, 0],
                                 [1, 1, 1]);
 
@@ -30,7 +30,7 @@ materials.push(ground_material.toArray());
 
 // Boxels
 let world_boxel = new Boxel([0,0,0], // position
-                            [50,50,50], // sizes
+                            [100,100,100], // sizes
                             [1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0], // lightning for each face and each channel (r,g,b)
                             0, // material id
                             -1, //parent boxel
@@ -50,8 +50,6 @@ boxels.push(glass.toArray());
 boxels.push(cloud.toArray());
 boxels.push(littlecube.toArray());
 
-console.log(boxels);
-
 let world_boxel_id = 0;
 
 let width = 1000;
@@ -60,9 +58,11 @@ let height = 600;
 let camera = new Camera(width, height)
 camera.position = [20,20,25];
 
-let lights = [new Light(1, [1., 1., 1.], [30,20,30], 0).toArray()];
+let lights = [new Light(100, [1., 1., 1.], [30,30,200], 0).toArray()];
 
 let boxel_engine = new BoxelEngine(boxels, materials, camera, lights);
+
+console.log(boxels);
 
 //events
 
