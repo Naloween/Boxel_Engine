@@ -299,31 +299,13 @@ function castRayGPU(boxels, materials, lights, ray_boxel_id, cast_point, directi
                 let id_light = boxels[boxel_id][30];
 
                 if (id_light >= 0){ // Si le boxel possède une source de lumière
-                    let vx = current_direction[0];
-                    let vy = current_direction[1];
-                    let vz = current_direction[2];
-                    let px = current_cast_point[0];
-                    let py = current_cast_point[1];
-                    let pz = current_cast_point[2];
-                    let lx = lights[id_light][4];
-                    let ly = lights[id_light][5];
-                    let lz = lights[id_light][6];
-    
-                    let D = lx*lx * vy*vy + lx*lx * vz*vz
-                            - 2*ly * (vy*(lx*vx + lz*vz - px*vx - pz*vz) + py*(vx*vx+vz*vz))
-                            - 2*lz * (vz*(lx*vx - px*vx - py*vy) + pz*(vx*vx+vy*vy))
-                            - 2*lx*px*vy*vy - 2*lx*px*vz*vz + 2*lx*py*vx*vy + 2*lx*pz*vx*vz
-                            + ly*ly * (vx*vx+vz*vz) + lz*lz * (vx*vx+vy*vy)
-                            + px*px*vy*vy + px*px*vz*vz + py*py*vx*vx + py*py*vz*vz + pz*pz*vx*vx + pz*pz*vy*vy
-                            - 2*(px*py*vx*vy + px*pz*vx*vz + py*pz*vy*vz);
-                    D = Math.sqrt(D);
-    
-                    let C = px*vx+py*vy+pz*vz - lx*vx-ly*vy-lz*vz;
-    
-                    // D = 1;
-                    // C = -10;
-
-                    light += lights[id_light][0] * (Math.atan((C + t * (vx*vx + vy*vy + vz*vz))/D) / D - Math.atan(C/D)/D);
+                    let t_dmin = (lights[id_light][4] - current_cast_point[0])*current_direction[0]
+                                    + (lights[id_light][5] - current_cast_point[1])*current_direction[1]
+                                    + (lights[id_light][6] - current_cast_point[2])*current_direction[2];
+                    let dmin = Math.sqrt((current_cast_point[0] + t_dmin*current_direction[0] - lights[id_light][4])**2
+                                        + (current_cast_point[1] + t_dmin*current_direction[1] - lights[id_light][5])**2
+                                        + (current_cast_point[2] + t_dmin*current_direction[2] - lights[id_light][6])**2);
+                    light += -lights[id_light][0] * lights[id_light][1 + channel] * (transparency**(Math.abs(t_dmin)+2*dmin))/dmin * (Math.atan((t_dmin-t)/dmin) - Math.atan(t_dmin/dmin));
                 }
                 
                 for (let dir=0; dir< 6; dir++){
@@ -362,7 +344,6 @@ function castRayGPU(boxels, materials, lights, ray_boxel_id, cast_point, directi
             // check ray percentage
 
             if (ray_percentage <= 0.0) {
-                return color
                 break
             }
     
