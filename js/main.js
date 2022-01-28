@@ -150,8 +150,6 @@ window.addEventListener("mousemove", function(event){
 });
 
 //run
-// let fps = 25;
-// let T = 1000/fps;
 let v = 2; //vitesse en m/ms
 
 let previousTimeStamp=0;
@@ -207,4 +205,5 @@ function run(){
     window.requestAnimationFrame(nextFrame);
 }
 
+console.log("starting Boxel Engine...");
 run();

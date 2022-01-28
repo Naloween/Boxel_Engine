@@ -1,68 +1,5 @@
 
-// Constantes
-
-// Material
-// const IDEX_R = 0;
-// const IDEX_G = 1;
-// const IDEX_B = 2;
-// const IDEX_TRANS = 3;
-// const IDEX_REFL = 4;
-// const IDEX_REFR = 5;
-
-// Boxel
-// const INDEX_X = 0;
-// const INDEX_Y = 1;
-// const INDEX_Z = 2;
-// const INDEX_SX = 3;
-// const INDEX_SY = 4;
-// const INDEX_SZ = 5;
-// const INDEX_MAT = 6;
-// const INDEX_BX1 = 7;
-// const INDEX_BX2 = 8;
-// const INDEX_BX3 = 9;
-// const INDEX_BX4 = 10;
-
 // GPU functions
-
-function fooGPU(boxels){
-    let p = [1,1,1];
-    return intersectionGPU(p, p, p, p);;
-}
-
-function getBoxelGPU(boxels, boxel_id, position){
-
-    // function isInGPU(boxel_position, boxel_sizes, position){
-    //     return false;
-    //     position[0] >= boxel_position[0] & position[0] <= boxel_position[0] + boxel_sizes[0]
-    //     & position[1] >= boxel_position[1] & position[1] <= boxel_position[1] + boxel_sizes[1]
-    //     & position[2] >= boxel_position[2] & position[2] <= boxel_position[2] + boxel_sizes[2];
-    // }
-
-    let searching = true;
-
-    while (searching) {
-        searching = false;
-        for (let k=0; k<4; k++){
-            let inner_boxel_id = boxels[boxel_id][7 + k];
-            if (inner_boxel_id >= 0){
-                let inner_boxel_pos = [boxels[inner_boxel_id][0], boxels[inner_boxel_id][1], boxels[inner_boxel_id][2]];
-                let inner_boxel_sizes = [boxels[inner_boxel_id][3], boxels[inner_boxel_id][4], boxels[inner_boxel_id][5]];
-                //let is_in = position[0] >= inner_boxel_pos[0];// & position[0] <= inner_boxel_pos[0] + inner_boxel_sizes[0];
-                // & position[1] >= inner_boxel_pos[1] & position[1] <= inner_boxel_pos[1] + inner_boxel_sizes[1]
-                // & position[2] >= inner_boxel_pos[2] & position[2] <= inner_boxel_pos[2] + inner_boxel_sizes[2]);
-                let bound1 = inner_boxel_pos[0] + inner_boxel_sizes[0]
-                if (false){
-                    boxel_id = inner_boxel_id;
-                    searching = true;
-                    break;
-                }
-            }
-        }
-    }
-
-    return boxel_id;
-}
-
 function intersectionGPU(boxel_position, boxel_sizes, cast_point, direction){
     let t_minx = direction[0] == 0 ? -1. : (boxel_position[0] - cast_point[0]) / direction[0];
     let t_maxx = direction[0] == 0 ? -1. : (boxel_position[0] + boxel_sizes[0] - cast_point[0]) / direction[0];
@@ -135,59 +72,7 @@ function intersectionGPU(boxel_position, boxel_sizes, cast_point, direction){
     
 }
 
-// function intersectionFaceGPU(boxel_position, boxel_sizes, cast_point, direction){
-//     let t_minx = direction[0] == 0 ? -1. : (boxel_position[0] - cast_point[0]) / direction[0];
-//     let t_maxx = direction[0] == 0 ? -1. : (boxel_position[0] + boxel_sizes[0] - cast_point[0]) / direction[0];
-//     let t_miny = direction[1] == 0 ? -1. : (boxel_position[1] - cast_point[1]) / direction[1];
-//     let t_maxy = direction[1] == 0 ? -1. : (boxel_position[1] + boxel_sizes[1] - cast_point[1]) / direction[1];
-//     let t_minz = direction[2] == 0 ? -1. : (boxel_position[2] - cast_point[2]) / direction[2];
-//     let t_maxz = direction[2] == 0 ? -1. : (boxel_position[2] + boxel_sizes[2] - cast_point[2]) / direction[2];
-
-//     let t = t_minx;
-//     let face = 0;
-//     if (t_maxx > t){
-//         t = t_maxx;
-//         face = 1;
-//     }
-
-//     if (t_miny < t_maxy) {
-//         if (t_maxy < t) {
-//             t = t_maxy;
-//             face = 3;
-//         }
-//     } else {
-//         if (t_miny < t) {
-//             t = t_miny;
-//             face = 2;
-//         }   
-//     }
-
-//     if (t_minz < t_maxz) {
-//         if (t_maxz < t) {
-//             t = t_maxz;
-//             face = 5;
-//         }
-//     } else {
-//         if (t_minz < t) {
-//             t = t_minz;
-//             face = 4;
-//         }   
-//     }
-//     return [t, face]
-// }
-
-
 function castRayGPU(boxels, materials, lights, ray_boxel_id, cast_point, direction, channel){
-
-    // for ray in rays{
-    //     while (nb_steps < 10){
-    //         if reflection {
-    //             rays.addray(new ray)
-    //         }
-
-    //         color += new_color
-    //     }
-    // }
 
     // return color
 
