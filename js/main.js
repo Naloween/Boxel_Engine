@@ -1,7 +1,7 @@
 
 // Lights
 
-let my_light = new Light(100, [1., 1., 1.], [30,30,30], 0);
+let my_light = new Light(200, [1., 1., 1.], [30,30,30], 0);
 
 // Materials
 let air_material = new Material([1,1,1], // Diffusion, i.e color
@@ -21,7 +21,7 @@ let glass_material = new Material([1.,0.0,1.],
                                 [0, 0, 0],
                                 [1.1, 1.2, 1.3]);
 let ground_material = new Material([1., 1., 1.],
-                                [0, 0, 0],
+                                [0.8, 0.8, 0.8],
                                 [0, 0, 0],
                                 [1, 1, 1]);
 
@@ -36,12 +36,13 @@ let red_cube = new Boxel([22,22,22], [1,2,3], red_material, world_boxel, [], nul
 let mirror = new Boxel([25,22,22], [1,1,0.1], mirror_material, world_boxel, [],null)
 let glass = new Boxel([23.5,23.5,22], [0.1,2,2], glass_material, world_boxel, [],null)
 let cloud = new Boxel([10.,10.,15.], [20,20,3], ground_material, world_boxel, [],null)
-let littlecube = new Boxel([20,20,16], [2,1,0.1], red_material, world_boxel, [],null)
+let littlecube = new Boxel([20,20,16], [2,1,0.1], red_material, cloud, [],null)
 
 world_boxel.inner_boxels.push(red_cube);
 world_boxel.inner_boxels.push(mirror);
 world_boxel.inner_boxels.push(glass);
 world_boxel.inner_boxels.push(cloud);
+cloud.inner_boxels.push(littlecube);
 
 let width = 1000;
 let height = 600;
@@ -51,7 +52,27 @@ camera.position = [20,20,30];
 
 let boxel_engine = new BoxelEngine(camera, world_boxel);
 
-console.log(boxels);
+// creator
+
+let selected_light = my_light;
+let selected_material = air_material;
+let selected_boxel = world_boxel;
+
+let element_light_color_red = document.getElementById("light_color_red");
+
+let apply_btn = document.getElementById("apply_btn");
+apply_btn.addEventListener("click",(event)=>{
+    if (event.button == 0){
+
+        selected_light.power = parseFloat(element_light_power.innerText);
+        selected_light.color[0] = parseFloat(element_light_color_red.innerText);
+        selected_light.color[1] = parseFloat(element_light_color_green.innerText);
+        selected_light.color[2] = parseFloat(element_light_color_blue.innerText);
+
+        boxel_engine.process_lights(boxel_engine.world_boxel);
+        boxel_engine.build_arrays();
+    }
+});
 
 //events
 
@@ -157,38 +178,39 @@ function nextFrame(timestamp){
     fps.innerText = 1/dt + "fps";
     
     // Controls
+    let new_position = camera.position;
     if (move_left){
-        camera.position = add(camera.position, mul(v * dt,camera.ux));
+        new_position = add(new_position, mul(v * dt,camera.ux));
     }
     if (move_right){
-        camera.position = substract(camera.position, mul(v * dt,camera.ux));
+        new_position = substract(new_position, mul(v * dt,camera.ux));
     } 
     if (move_front){
-        camera.position = add(camera.position, mul(v * dt,camera.u));
+        new_position = add(new_position, mul(v * dt,camera.u));
     }
     if (move_back){
-        camera.position = substract(camera.position, mul(v * dt,camera.u));
+        new_position = substract(new_position, mul(v * dt,camera.u));
     }
     if (move_up){
-        camera.position[2] += v * dt;
+        new_position[2] += v * dt;
     }
     if (move_down){
-        camera.position[2] -= v * dt;
+        new_position[2] -= v * dt;
     }
 
+    let teta = camera.teta;
+    let phi = camera.phi;
     if (mouse_down){
         let dx = mouse_click_x - mouse_x;
         let dy = mouse_click_y - mouse_y;
         
-        let teta = teta_click - sensibilite * dx;
-        let phi = phi_click - sensibilite * dy;
-
-        camera.teta = teta;
-        camera.phi = phi;
+        teta = teta_click - sensibilite * dx;
+        phi = phi_click - sensibilite * dy;
     }
 
     //draw frame
-    camera.update();
+    boxel_engine.set_camera_position(new_position);
+    boxel_engine.set_camera_orientation(teta, phi);
     boxel_engine.render();
 
     window.requestAnimationFrame(nextFrame);

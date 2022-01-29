@@ -72,7 +72,7 @@ function intersectionGPU(boxel_position, boxel_sizes, cast_point, direction){
     
 }
 
-function castRayGPU(boxels, materials, lights, ray_boxel_id, cast_point, direction, channel){
+function castRayGPU(boxels, materials, lights, ray_boxel_id, cast_point, direction, channel, max_steps){
 
     // return color
 
@@ -99,7 +99,7 @@ function castRayGPU(boxels, materials, lights, ray_boxel_id, cast_point, directi
         let distance = 0.;
         let nb_steps = 0;
 
-        while (nb_steps < 10) {
+        while (nb_steps < max_steps) {
     
             //Calcul de t la distance entre le point de cast et le bord le plus proche du boxel
             let res = intersectionGPU(
@@ -315,7 +315,7 @@ function castRayGPU(boxels, materials, lights, ray_boxel_id, cast_point, directi
 }
 
 
-function renderGPU(boxels, materials, lights, width, height, fov, u, ux, uy, position, boxel_id, diaphragme){
+function renderGPU(boxels, materials, lights, width, height, fov, u, ux, uy, position, boxel_id, diaphragme, max_steps){
     
     
     let dx = fov * (this.thread.x - width/2) ;
@@ -327,9 +327,9 @@ function renderGPU(boxels, materials, lights, width, height, fov, u, ux, uy, pos
     let n = Math.sqrt(direction[0]*direction[0] + direction[1]*direction[1] + direction[2]*direction[2]);
     direction = [direction[0]/n, direction[1]/n, direction[2]/n]
 
-    let r = castRayGPU(boxels, materials, lights, boxel_id, [position[0], position[1], position[2]], direction, 0);
-    let g = castRayGPU(boxels, materials, lights, boxel_id, [position[0], position[1], position[2]], direction, 1);
-    let b = castRayGPU(boxels, materials, lights, boxel_id, [position[0], position[1], position[2]], direction, 2);
+    let r = castRayGPU(boxels, materials, lights, boxel_id, [position[0], position[1], position[2]], direction, 0, max_steps);
+    let g = castRayGPU(boxels, materials, lights, boxel_id, [position[0], position[1], position[2]], direction, 1, max_steps);
+    let b = castRayGPU(boxels, materials, lights, boxel_id, [position[0], position[1], position[2]], direction, 2, max_steps);
     this.color(diaphragme * r, diaphragme * g, diaphragme * b, 1)
 }
 
@@ -424,7 +424,7 @@ class Camera{
 
         this.FOV = 0.001;
         this.diaphragme = 1;
-        this.render_distance = 1000.0;
+        this.max_steps = 10;
 
         this.u = new Array(3);
         this.ux = new Array(3);
@@ -462,36 +462,76 @@ class Camera{
         this.render(boxels, materials, lights,
             this.width, this.height, this.FOV,
             this.u, this.ux, this.uy,
-            this.position, boxel_id, this.diaphragme);
+            this.position, boxel_id, this.diaphragme, this.max_steps);
     }
 }
 
 class BoxelEngine{
-    constructor(camera, current_boxel){
+    constructor(camera, world_boxel){
 
         this.camera = camera;
-        this.current_boxel = current_boxel;
+        this.world_boxel = world_boxel;
+        this.current_boxel = this.get_boxel();
 
+        this.process_lights(this.world_boxel);
+
+        this.boxels_on_gpu = [];
         this.lights_array = [];
         this.materials_array = [];
         this.boxels_array = [];
 
         this.build_arrays();
-        this.process_lights();
+    }
+
+    set_camera_position(position){
+        this.camera.position = position;
+        boxel_engine.current_boxel = boxel_engine.get_boxel();
+    }
+
+    set_camera_orientation(teta, phi){
+        camera.teta = teta;
+        camera.phi = phi;
+        camera.update();
+    }
+
+    get_boxel(){
+        let [x,y,z] = this.camera.position;
+        let boxel = this.world_boxel;
+        let is_in = true;
+
+        while (is_in){
+            is_in = false;
+            for (let inner_boxel of boxel.inner_boxels){
+                if (x > inner_boxel.position[0] && y > inner_boxel.position[1] && z > inner_boxel.position[2]
+                    && x < inner_boxel.position[0] + inner_boxel.sizes[0] && y < inner_boxel.position[1] + inner_boxel.sizes[1] && z < inner_boxel.position[2] + inner_boxel.sizes[2]){
+                    is_in = true;
+                    boxel = inner_boxel;
+                    break;
+                }
+            }
+        }
+        return boxel;
     }
 
     build_arrays(){
 
-        this.boxels_on_gpu = [];
         for (let gpu_boxel of this.boxels_on_gpu){
             gpu_boxel.id = -1;
+            if (gpu_boxel.light != null){
+                gpu_boxel.light.id = -1;
+            }
+            if (gpu_boxel.material != null){
+                gpu_boxel.material.id = -1;
+            }
+            
         }
+        this.boxels_on_gpu = [];
 
         this.lights_array = [];
         this.materials_array = [];
         this.boxels_array = [];
 
-        this.add_boxel_to_array(this.current_boxel);
+        this.add_boxel_to_array(this.world_boxel);
         
     }
 
@@ -526,64 +566,48 @@ class BoxelEngine{
         this.camera.drawFrame(this.boxels_array, this.materials_array, this.lights_array, this.current_boxel.id);
     }
 
-    process_lights(){
+    process_lights(parent_boxel){
 
-        // Initialisation des lights à 0
-        for (let boxel of this.boxels_array){
+        // Parent boxel éclaire chacun de ses inner_boxels
+        for (let inner_boxel of parent_boxel.inner_boxels){
             for (let channel=0; channel < 3; channel++){
                 for (let face=0; face < 6; face++){
-                    boxel[6 + face + 6 * channel] = 0;
-                }
-            }
-        }
+                    inner_boxel.lighting[face + 6 * channel] = 0;
+                    
+                    // Placement du point au centre de la face
+                    let direction = Math.floor(face / 2);
+                    let normale = [0,0,0];
 
-        // Calcul de la lumière pour chaque boxel possédant une source de lumière
-        for (let parent_boxel of this.boxels_array){
-            let light_id = parent_boxel[30];
-            if (light_id >= 0){
-                let light = this.lights_array[light_id];
-                
-                // Pour chacun des enfants du parent_boxel
-                for (let k=0; k<4; k++){
-
-                    let boxel_id = parent_boxel[26 + k];
-                    if (boxel_id < 0){
-                        break;
+                    if (face % 2 == 1){
+                        normale[direction] = 1;
+                    } else {
+                        normale[direction] = -1
                     }
-                    
-                    let boxel = this.boxels_array[boxel_id];
-                    
-                    for (let channel=0; channel < 3; channel++){
-                        for (let face=0; face < 6; face++){
-                            let direction = Math.floor(face / 2);
-                            let normale = [0,0,0];
 
-                            if (face % 2 == 1){
-                                normale[direction] = 1;
-                            } else {
-                                normale[direction] = -1
-                            }
-    
-                            let P = [boxel[0] + boxel[3]/2, boxel[1] + boxel[4]/2, boxel[2] + boxel[5]/2];
-    
-                            if (face%2 == 1){
-                                P[direction] += boxel[3 + direction]/2;
-                            } else {
-                                P[direction] -= boxel[3 + direction]/2;
-                            }
-    
-                            let u = substract([light[4], light[5], light[6]], P);
-                            let d = Math.sqrt(scal(u, u));
-                            u = mul(1/d, u);
-    
-                            let coef = scal(normale, u);
-                            if (coef >=0){
-                                boxel[6  + 6 * channel + face] += coef * light[0] * light[1 + channel]/(d*d);
-                            }
+                    let P = [inner_boxel.position[0] + inner_boxel.sizes[0]/2,
+                            inner_boxel.position[1] + inner_boxel.sizes[1]/2,
+                            inner_boxel.position[2] + inner_boxel.sizes[2]/2];
+
+                    if (face%2 == 1){
+                        P[direction] += inner_boxel.sizes[direction]/2;
+                    } else {
+                        P[direction] -= inner_boxel.sizes[direction]/2;
+                    }
+
+                    // Eclairage à partir d'une source lumineuse
+                    if (parent_boxel.light != null){
+                        let u = substract(parent_boxel.light.position, P);
+                        let d = Math.sqrt(scal(u, u));
+                        u = mul(1/d, u);
+
+                        let coef = scal(normale, u);
+                        if (coef >=0){
+                            inner_boxel.lighting[face + 6 * channel] += coef * parent_boxel.light.power * parent_boxel.light.color[channel]/(d*d);
                         }
                     }
                 }
             }
+            this.process_lights(inner_boxel);
         }
     }
 }
