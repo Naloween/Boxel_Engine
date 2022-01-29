@@ -1,7 +1,11 @@
 
+// Lights
+
+let my_light = new Light(100, [1., 1., 1.], [30,30,30], 0);
+
 // Materials
 let air_material = new Material([1,1,1], // Diffusion, i.e color
-                                [0.99,0.993,0.995], // Transparency percentage
+                                [0.999,0.9993,0.9995], // Transparency percentage
                                 [0, 0, 0], // Reflection percentage
                                 [1, 1, 1]); // Refraction indice
 let red_material = new Material([1.,0.0,0.],
@@ -21,46 +25,31 @@ let ground_material = new Material([1., 1., 1.],
                                 [0, 0, 0],
                                 [1, 1, 1]);
 
-let materials = [];
-materials.push(air_material.toArray());
-materials.push(red_material.toArray());
-materials.push(mirror_material.toArray());
-materials.push(glass_material.toArray());
-materials.push(ground_material.toArray());
-
 // Boxels
 let world_boxel = new Boxel([0,0,0], // position
                             [1000,1000,1000], // sizes
-                            [1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0], // lightning for each face and each channel (r,g,b)
-                            0, // material id
-                            -1, //parent boxel
-                            [1, 2, 3, 4], // inner boxels
-                            0); // Light
-let red_cube = new Boxel([22,22,22], [1,2,3], [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], 1, 0, [-1, -1, -1, -1],-1)
-let mirror = new Boxel([25,22,22], [1,1,0.1], [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], 2, 0, [-1, -1, -1, -1],-1)
-let glass = new Boxel([23.5,23.5,22], [0.1,2,2], [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], 3, 0, [-1, -1, -1, -1],-1)
-let cloud = new Boxel([10.,10.,15.], [20,20,3], [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], 4, 0, [5, -1, -1, -1],-1)
-let littlecube = new Boxel([20,20,16], [2,1,0.1], [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], 1, 4, [-1, -1, -1, -1],-1)
+                            air_material, // material
+                            null, //parent boxel
+                            [], // inner boxels
+                            my_light); // Light
+let red_cube = new Boxel([22,22,22], [1,2,3], red_material, world_boxel, [], null)
+let mirror = new Boxel([25,22,22], [1,1,0.1], mirror_material, world_boxel, [],null)
+let glass = new Boxel([23.5,23.5,22], [0.1,2,2], glass_material, world_boxel, [],null)
+let cloud = new Boxel([10.,10.,15.], [20,20,3], ground_material, world_boxel, [],null)
+let littlecube = new Boxel([20,20,16], [2,1,0.1], red_material, world_boxel, [],null)
 
-let boxels = [];
-boxels.push(world_boxel.toArray());
-boxels.push(red_cube.toArray());
-boxels.push(mirror.toArray());
-boxels.push(glass.toArray());
-boxels.push(cloud.toArray());
-boxels.push(littlecube.toArray());
-
-let world_boxel_id = 0;
+world_boxel.inner_boxels.push(red_cube);
+world_boxel.inner_boxels.push(mirror);
+world_boxel.inner_boxels.push(glass);
+world_boxel.inner_boxels.push(cloud);
 
 let width = 1000;
 let height = 600;
 
-let camera = new Camera(width, height)
-camera.position = [20,20,25];
+let camera = new Camera(width, height, document.getElementById("view"));
+camera.position = [20,20,30];
 
-let lights = [new Light(100, [1., 1., 1.], [30,30,30], 0).toArray()];
-
-let boxel_engine = new BoxelEngine(boxels, materials, camera, lights);
+let boxel_engine = new BoxelEngine(camera, world_boxel);
 
 console.log(boxels);
 
@@ -150,11 +139,15 @@ window.addEventListener("mousemove", function(event){
 });
 
 //run
+let running = false;
 let v = 2; //vitesse en m/ms
-
 let previousTimeStamp=0;
 
 function nextFrame(timestamp){
+    if (!running){
+        return
+    }
+
     //time
     const dt = (timestamp - previousTimeStamp)/1000; // in secondes
     previousTimeStamp = timestamp;
@@ -202,8 +195,16 @@ function nextFrame(timestamp){
 }
 
 function run(){
-    window.requestAnimationFrame(nextFrame);
+    if (running){
+        window.requestAnimationFrame(nextFrame);
+    }
 }
 
 console.log("starting Boxel Engine...");
-run();
+play_btn = document.getElementById("play_btn");
+play_btn.addEventListener("mousedown",(event)=>{
+    if (event.button == 0){
+        running = !running;
+        run();
+    }
+});

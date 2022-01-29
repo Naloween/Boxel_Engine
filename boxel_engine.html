@@ -2,11 +2,33 @@
 <html>
     <head>
         <meta charset="utf-8" />
+        <link rel="stylesheet" href="css/boxel_engine.css" />
         <title>Boxel Engine</title>
     </head>
 
     <body>
-        <p id="fps">0 fps</p>
+
+        <div id="view">
+            <p id="fps">0 fps</p>
+        </div>
+
+        <div id="creator">
+            <h2>Creator tab</h2>
+
+            <button id="play_btn">Play/Stop</button>
+            
+            <div id="lights">
+                <h3>Lights</h3>
+            </div>
+
+            <div id="materials">
+                <h3>Materials</h3>
+            </div>
+
+            <div id="boxels">
+                <h3>Boxels</h3>
+            </div>
+        </div>
         
     </body>
     <script src="js/gpu-browser.min.js"></script>

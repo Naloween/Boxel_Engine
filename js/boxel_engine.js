@@ -100,9 +100,6 @@ function castRayGPU(boxels, materials, lights, ray_boxel_id, cast_point, directi
         let nb_steps = 0;
 
         while (nb_steps < 10) {
-        
-            // On regarde dans quel boxel on est
-            //boxel_id = getBoxelGPU(boxels, boxel_id, current_cast_point);
     
             //Calcul de t la distance entre le point de cast et le bord le plus proche du boxel
             let res = intersectionGPU(
@@ -251,6 +248,7 @@ function castRayGPU(boxels, materials, lights, ray_boxel_id, cast_point, directi
                                             current_cast_point[2] + t_reflection * current_direction[2]];
     
                 if (!next_ray && coef_reflection > 0.0) {
+                    ray_percentage *= (1-coef_reflection);
                     next_ray = true;
                     next_ray_percentage = coef_reflection;
                     next_ray_cast_point = cast_point_reflection;
@@ -335,6 +333,24 @@ function renderGPU(boxels, materials, lights, width, height, fov, u, ux, uy, pos
     this.color(diaphragme * r, diaphragme * g, diaphragme * b, 1)
 }
 
+// Classes
+
+class Light{
+    constructor(power, color, position, parent){
+        this.power = power;
+        this.color = color;
+        this.position = position;
+        this.id = -1;
+    }
+
+    toArray(){
+        let result = [this.power];
+        result = result.concat(this.color);
+        result = result.concat(this.position);
+
+        return result;
+    }
+}
 
 class Material{
     constructor(diffusion, transparency, reflection, refraction){
@@ -342,47 +358,63 @@ class Material{
         this.transparency = transparency;
         this.reflection = reflection; // entre 0 et 1
         this.refraction = refraction; //n1*sin(i) = n2*sin(r)
-
+        this.id = -1;
     }
 
     toArray(){
-        let result = [this.diffusion[0], this.diffusion[1], this.diffusion[2],
-        this.transparency[0], this.transparency[1], this.transparency[2],
-        this.reflection[0], this.reflection[1], this.reflection[2],
-        this.refraction[0], this.refraction[1], this.refraction[2]]
+        let result = this.diffusion;
+        result = result.concat(this.transparency);
+        result = result.concat(this.reflection);
+        result = result.concat(this.refraction);
 
         return result //[r, g, b, transparency, reflection, refraction]
     }
 }
 
 class Boxel{
-    constructor(position, sizes, lighting, material_id, parent_boxel, inner_boxels, light){
+    constructor(position, sizes, material, parent_boxel, inner_boxels, light){
         this.position = position;
         this.sizes = sizes;
-        this.lighting = lighting; // each face has an amount of light, we store only the flux i.e amount of light / surface
-        this.material_id = material_id; // id of material
+        this.lighting = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]; // each face has an amount of light, we store only the flux i.e amount of light / surface
+        this.material = material; // id of material
         this.parent_boxel = parent_boxel;
         this.inner_boxels = inner_boxels; // ids of inner boxels
         this.light = light;
+        this.id = -1;
     }
 
     toArray(){
-        let result = [this.position[0], this.position[1], this.position[2], //0
-                    this.sizes[0], this.sizes[1], this.sizes[2], //3
-                    this.lighting[0], this.lighting[1], this.lighting[2], this.lighting[3], this.lighting[4], this.lighting[5], //6
-                    this.lighting[6], this.lighting[7], this.lighting[8], this.lighting[9], this.lighting[10], this.lighting[11],
-                    this.lighting[12], this.lighting[13], this.lighting[14], this.lighting[15], this.lighting[16], this.lighting[17],
-                    this.material_id, //24
-                    this.parent_boxel, //25
-                    this.inner_boxels[0], this.inner_boxels[1], this.inner_boxels[2],this.inner_boxels[3], //26
-                    this.light] // 30
+        let result = this.position; //0
+        result = result.concat(this.sizes); //3
+        result = result.concat(this.lighting); //6
+        result.push(this.material.id); // 24
 
-        return result //[posx, posy, posz, sizex, sizey, sizez, lightnings, material_id, parent_boxel, boxelid1, boxelid2, boxelid3, boxelid4]
+        if (this.parent_boxel == null){ // 25
+            result.push(-1);
+        } else {
+            result.push(this.parent_boxel.id);
+        }
+
+        for (let k=0; k<4; k++){ //26
+            if (k >= this.inner_boxels.length){
+                result.push(-1);
+            } else {
+                result.push(this.inner_boxels[k].id);
+            }
+        }
+
+        if (this.light == null){ // 30
+            result.push(-1);
+        } else {
+            result.push(this.light.id);
+        }
+
+        return result //[posx, posy, posz, sizex, sizey, sizez, lightnings, material_id, parent_boxel, boxelid1, boxelid2, boxelid3, boxelid4, light_id]
     }
 }
 
 class Camera{
-    constructor(width, height){
+    constructor(width, height, element_to_add_canvas){
         this.width = width;
         this.height = height;
 
@@ -402,17 +434,12 @@ class Camera{
 
         this.gpu = new GPU();
         this.gpu.addFunction(intersectionGPU);
-        //this.gpu.addFunction(intersectionFaceGPU);
-        //this.gpu.addFunction(isInGPU);
-        this.gpu.addFunction(getBoxelGPU);
         this.gpu.addFunction(castRayGPU);
         this.render = this.gpu.createKernel(renderGPU)
         .setOutput([width, height])
-        .setGraphical(true);
+        .setGraphical(true); 
 
-        this.fooGPU = this.gpu.createKernel(fooGPU).setOutput([1]);   
-
-        document.getElementsByTagName('body')[0].appendChild(this.render.canvas);
+        element_to_add_canvas.appendChild(this.render.canvas);
     }
 
     update(){        
@@ -439,44 +466,70 @@ class Camera{
     }
 }
 
-class Light{
-    constructor(power, color, position, parent){
-        this.power = power;
-        this.color = color;
-        this.position = position;
-        this.parent = parent; // parent boxel: the light will have effect only of the childs of the parent boxels recursively
-    }
-
-    toArray(){
-        return [
-            this.power, //0
-            this.color[0], this.color[1], this.color[2], //1
-            this.position[0], this.position[1], this.position[2], //4
-            this.parent //7
-        ];
-    }
-}
-
 class BoxelEngine{
-    constructor(boxels, materials, camera, lights){
-        this.boxels = boxels;
-        this.materials = materials;
+    constructor(camera, current_boxel){
+
         this.camera = camera;
-        this.lights = lights;
+        this.current_boxel = current_boxel;
 
-        this.current_boxel_id = 0;
+        this.lights_array = [];
+        this.materials_array = [];
+        this.boxels_array = [];
 
+        this.build_arrays();
         this.process_lights();
     }
 
+    build_arrays(){
+
+        this.boxels_on_gpu = [];
+        for (let gpu_boxel of this.boxels_on_gpu){
+            gpu_boxel.id = -1;
+        }
+
+        this.lights_array = [];
+        this.materials_array = [];
+        this.boxels_array = [];
+
+        this.add_boxel_to_array(this.current_boxel);
+        
+    }
+
+    add_boxel_to_array(boxel){
+
+        if (boxel.light != null){
+            if (boxel.light.id < 0){ // Si la lumière n'est pas déjà ajoutée
+                boxel.light.id = this.lights_array.length;
+                this.lights_array.push(boxel.light.toArray());
+            }
+        }
+
+        if (boxel.material.id < 0){ // Si le material n'est pas déjà ajoutée
+            boxel.material.id = this.materials_array.length;
+            this.materials_array.push(boxel.material.toArray());
+        }
+
+        for (let inner_boxel of boxel.inner_boxels){
+            this.add_boxel_to_array(inner_boxel);
+        }
+
+        boxel.id = this.boxels_array.length;
+        this.boxels_array.push(boxel.toArray());
+        this.boxels_on_gpu.push(boxel);
+
+        for (let inner_boxel of boxel.inner_boxels){
+            this.boxels_array[inner_boxel.id][25] = boxel.id;
+        }
+    }
+
     render(){
-        this.camera.drawFrame(this.boxels, this.materials, this.lights, this.current_boxel_id);
+        this.camera.drawFrame(this.boxels_array, this.materials_array, this.lights_array, this.current_boxel.id);
     }
 
     process_lights(){
 
         // Initialisation des lights à 0
-        for (let boxel of boxels){
+        for (let boxel of this.boxels_array){
             for (let channel=0; channel < 3; channel++){
                 for (let face=0; face < 6; face++){
                     boxel[6 + face + 6 * channel] = 0;
@@ -484,36 +537,49 @@ class BoxelEngine{
             }
         }
 
-        // Ajout de la lumière pour chaque lumière et boxel concerné
-        for (let light of this.lights){
-            for (let k=0; k<4; k++){
-                let boxel_id = boxels[light[7]][26 + k];
-                let boxel = boxels[boxel_id];
-                for (let channel=0; channel < 3; channel++){
-                    for (let face=0; face < 6; face++){
-                        let direction = Math.floor(face / 2);
-                        let normale = [0,0,0];
-                        if (face % 2 == 1){
-                            normale[direction] = 1;
-                        } else {
-                            normale[direction] = -1
-                        }
+        // Calcul de la lumière pour chaque boxel possédant une source de lumière
+        for (let parent_boxel of this.boxels_array){
+            let light_id = parent_boxel[30];
+            if (light_id >= 0){
+                let light = this.lights_array[light_id];
+                
+                // Pour chacun des enfants du parent_boxel
+                for (let k=0; k<4; k++){
 
-                        let P = [boxel[0] + boxel[3]/2, boxel[1] + boxel[4]/2, boxel[2] + boxel[5]/2];
+                    let boxel_id = parent_boxel[26 + k];
+                    if (boxel_id < 0){
+                        break;
+                    }
+                    
+                    let boxel = this.boxels_array[boxel_id];
+                    
+                    for (let channel=0; channel < 3; channel++){
+                        for (let face=0; face < 6; face++){
+                            let direction = Math.floor(face / 2);
+                            let normale = [0,0,0];
 
-                        if (face%2 == 1){
-                            P[direction] += boxel[3 + direction]/2;
-                        } else {
-                            P[direction] -= boxel[3 + direction]/2;
-                        }
-
-                        let u = substract([light[4], light[5], light[6]], P);
-                        let d = Math.sqrt(scal(u, u));
-                        u = mul(1/d, u);
-
-                        let coef = scal(normale, u);
-                        if (coef >=0){
-                            boxel[6  + 6 * channel + face] += coef * light[0] * light[1 + channel]/(d*d);
+                            if (face % 2 == 1){
+                                normale[direction] = 1;
+                            } else {
+                                normale[direction] = -1
+                            }
+    
+                            let P = [boxel[0] + boxel[3]/2, boxel[1] + boxel[4]/2, boxel[2] + boxel[5]/2];
+    
+                            if (face%2 == 1){
+                                P[direction] += boxel[3 + direction]/2;
+                            } else {
+                                P[direction] -= boxel[3 + direction]/2;
+                            }
+    
+                            let u = substract([light[4], light[5], light[6]], P);
+                            let d = Math.sqrt(scal(u, u));
+                            u = mul(1/d, u);
+    
+                            let coef = scal(normale, u);
+                            if (coef >=0){
+                                boxel[6  + 6 * channel + face] += coef * light[0] * light[1 + channel]/(d*d);
+                            }
                         }
                     }
                 }
