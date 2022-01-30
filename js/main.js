@@ -3,6 +3,8 @@
 
 let my_light = new Light(200, [1., 1., 1.], [30,30,30], 0);
 
+let lights = [my_light]
+
 // Materials
 let air_material = new Material([1,1,1], // Diffusion, i.e color
                                 [0.999,0.9993,0.9995], // Transparency percentage
@@ -25,6 +27,8 @@ let ground_material = new Material([1., 1., 1.],
                                 [0, 0, 0],
                                 [1, 1, 1]);
 
+let materials = [air_material, red_material, mirror_material, glass_material, ground_material];
+
 // Boxels
 let world_boxel = new Boxel([0,0,0], // position
                             [1000,1000,1000], // sizes
@@ -44,6 +48,8 @@ world_boxel.inner_boxels.push(glass);
 world_boxel.inner_boxels.push(cloud);
 cloud.inner_boxels.push(littlecube);
 
+let boxels = [world_boxel, red_cube, mirror, glass, cloud, littlecube];
+
 let width = 1000;
 let height = 600;
 
@@ -58,16 +64,164 @@ let selected_light = my_light;
 let selected_material = air_material;
 let selected_boxel = world_boxel;
 
-let element_light_color_red = document.getElementById("light_color_red");
+let add_light_btn = document.getElementById("add_light_btn");
+let add_material_btn = document.getElementById("add_material_btn");
+let add_boxel_btn = document.getElementById("add_boxel_btn");
 
-let apply_btn = document.getElementById("apply_btn");
-apply_btn.addEventListener("click",(event)=>{
+let element_light_power = document.getElementById("light_power");
+let element_light_color_red = document.getElementById("light_color_red");
+let element_light_color_green = document.getElementById("light_color_green");
+let element_light_color_blue = document.getElementById("light_color_blue");
+let element_light_position_x = document.getElementById("light_position_x");
+let element_light_position_y = document.getElementById("light_position_y");
+let element_light_position_z = document.getElementById("light_position_z");
+
+let element_material_diffusion_red = document.getElementById("material_diffusion_red");
+let element_material_diffusion_green = document.getElementById("material_diffusion_green");
+let element_material_diffusion_blue = document.getElementById("material_diffusion_blue");
+let element_material_transparency_red = document.getElementById("material_transparency_red");
+let element_material_transparency_green = document.getElementById("material_transparency_green");
+let element_material_transparency_blue = document.getElementById("material_transparency_blue");
+let element_material_reflection_red = document.getElementById("material_reflection_red");
+let element_material_reflection_green = document.getElementById("material_reflection_green");
+let element_material_reflection_blue = document.getElementById("material_reflection_blue");
+let element_material_refraction_red = document.getElementById("material_refraction_red");
+let element_material_refraction_green = document.getElementById("material_refraction_green");
+let element_material_refraction_blue = document.getElementById("material_refraction_blue");
+
+let element_boxel_position_x = document.getElementById("boxel_position_x");
+let element_boxel_position_y = document.getElementById("boxel_position_y");
+let element_boxel_position_z = document.getElementById("boxel_position_z");
+let element_boxel_size_x = document.getElementById("boxel_size_x");
+let element_boxel_size_y = document.getElementById("boxel_size_y");
+let element_boxel_size_z = document.getElementById("boxel_size_z");
+let element_boxel_material = document.getElementById("boxel_material");
+let element_boxel_parent = document.getElementById("boxel_parent");
+let element_boxel_light = document.getElementById("boxel_light");
+
+function show_elements(){
+    let element_lights = document.getElementById("lights");
+    element_lights.innerHTML = "";
+
+    for (let k=0; k<lights.length; k++){
+        let element_light = document.createElement("p");
+        element_light.innerText = "light "+k;
+        element_light.addEventListener("click", (event)=>{
+            if(event.button == 0){
+                selected_light = lights[k];
+
+                element_light_power.value = selected_light.power;
+                element_light_color_red.value = selected_light.color[0];
+                element_light_color_green.value = selected_light.color[1];
+                element_light_color_blue.value = selected_light.color[2];
+                element_light_position_x.value = selected_light.position[0];
+                element_light_position_y.value = selected_light.position[1];
+                element_light_position_z.value = selected_light.position[2];
+            }
+        });
+        element_lights.appendChild(element_light);
+    }
+
+    let element_materials = document.getElementById("materials");
+    element_materials.innerHTML = "";
+
+    for (let k=0; k<materials.length; k++){
+        let element_material = document.createElement("p");
+        element_material.innerText = "material "+k;
+        element_material.addEventListener("click", (event)=>{
+            if(event.button == 0){
+                selected_material = materials[k];
+
+                element_material_diffusion_red.value = selected_material.diffusion[0];
+                element_material_diffusion_green.value = selected_material.diffusion[1];
+                element_material_diffusion_blue.value = selected_material.diffusion[2];
+                element_material_transparency_red.value = selected_material.transparency[0];
+                element_material_transparency_green.value = selected_material.transparency[1];
+                element_material_transparency_blue.value = selected_material.transparency[2];
+                element_material_reflection_red.value = selected_material.reflection[0];
+                element_material_reflection_green.value = selected_material.reflection[1];
+                element_material_reflection_blue.value = selected_material.reflection[2];
+                element_material_refraction_red.value = selected_material.refraction[0];
+                element_material_refraction_green.value = selected_material.refraction[1];
+                element_material_refraction_blue.value = selected_material.refraction[2];
+            }
+        });
+        element_materials.appendChild(element_material);
+    }
+
+    let elements_boxels = document.getElementById("boxels");
+    elements_boxels.innerHTML = "";
+
+    for (let k=0; k<boxels.length; k++){
+        let element_boxel = document.createElement("p");
+        element_boxel.innerText = "boxel "+k;
+        element_boxel.addEventListener("click", (event)=>{
+            if(event.button == 0){
+                selected_boxel = boxels[k];
+
+                element_boxel_position_x.value = selected_boxel.position[0];
+                element_boxel_position_y.value = selected_boxel.position[1];
+                element_boxel_position_z.value = selected_boxel.position[2];
+                element_boxel_size_x.value = selected_boxel.sizes[0];
+                element_boxel_size_y.value = selected_boxel.sizes[1];
+                element_boxel_size_z.value = selected_boxel.sizes[2];
+            }
+        });
+        elements_boxels.appendChild(element_boxel  );
+    }
+}
+
+show_elements();
+
+let apply_light_btn = document.getElementById("apply_light_btn");
+apply_light_btn.addEventListener("click",(event)=>{
     if (event.button == 0){
 
-        selected_light.power = parseFloat(element_light_power.innerText);
-        selected_light.color[0] = parseFloat(element_light_color_red.innerText);
-        selected_light.color[1] = parseFloat(element_light_color_green.innerText);
-        selected_light.color[2] = parseFloat(element_light_color_blue.innerText);
+        selected_light.power = parseFloat(element_light_power.value);
+        selected_light.color[0] = parseFloat(element_light_color_red.value);
+        selected_light.color[1] = parseFloat(element_light_color_green.value);
+        selected_light.color[2] = parseFloat(element_light_color_blue.value);
+        selected_light.position[0] = parseFloat(element_light_position_x.value);
+        selected_light.position[1] = parseFloat(element_light_position_y.value);
+        selected_light.position[2] = parseFloat(element_light_position_z.value);
+
+        boxel_engine.process_lights(boxel_engine.world_boxel);
+        boxel_engine.build_arrays();
+    }
+});
+
+let apply_material_btn = document.getElementById("apply_material_btn");
+apply_material_btn.addEventListener("click",(event)=>{
+    if (event.button == 0){
+
+        selected_material.diffusion[0] = parseFloat(element_material_diffusion_red.value);
+        selected_material.diffusion[1] = parseFloat(element_material_diffusion_green.value);
+        selected_material.diffusion[2] = parseFloat(element_material_diffusion_blue.value);
+        selected_material.transparency[0] = parseFloat(element_material_transparency_red.value);
+        selected_material.transparency[1] = parseFloat(element_material_transparency_green.value);
+        selected_material.transparency[2] = parseFloat(element_material_transparency_blue.value);
+        selected_material.reflection[0] = parseFloat(element_material_reflection_red.value);
+        selected_material.reflection[1] = parseFloat(element_material_reflection_green.value);
+        selected_material.reflection[2] = parseFloat(element_material_reflection_blue.value);
+        selected_material.refraction[0] = parseFloat(element_material_refraction_red.value);
+        selected_material.refraction[1] = parseFloat(element_material_refraction_green.value);
+        selected_material.refraction[2] = parseFloat(element_material_refraction_blue.value);
+
+        boxel_engine.process_lights(boxel_engine.world_boxel);
+        boxel_engine.build_arrays();
+    }
+});
+
+let apply_boxel_btn = document.getElementById("apply_boxel_btn");
+apply_boxel_btn.addEventListener("click",(event)=>{
+    if (event.button == 0){
+
+        selected_boxel.position[0] = parseFloat(element_boxel_position_x.value);
+        selected_boxel.position[1] = parseFloat(element_boxel_position_y.value);
+        selected_boxel.position[2] = parseFloat(element_boxel_position_z.value);
+        selected_boxel.sizes[0] = parseFloat(element_boxel_size_x.value);
+        selected_boxel.sizes[1] = parseFloat(element_boxel_size_y.value);
+        selected_boxel.sizes[2] = parseFloat(element_boxel_size_z.value);
 
         boxel_engine.process_lights(boxel_engine.world_boxel);
         boxel_engine.build_arrays();

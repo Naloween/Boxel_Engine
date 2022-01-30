@@ -18,27 +18,76 @@
             <button id="play_btn">Play/Stop</button>
             
             <h3>Lights</h3>
+
             <div id="lights">
                 
             </div>
+
+            <button id="add_light_btn">+</button>
+
             <div id="light_settings">
-                <input id="material_difffusion_red" type=text>
-                <input id="material_difffusion_green" type=text>
-                <input id="material_difffusion_blue" type=text>
+                <p>power :</p>
+                <input id="light_power" type=text>
+                <div id="light_color">
+                    <p>color :</p>
+                    <input id="light_color_red" type=text>
+                    <input id="light_color_green" type=text>
+                    <input id="light_color_blue" type=text>
+                </div>
+                <div id="light_position">
+                    <p>position :</p>
+                    <input id="light_position_x" type=text>
+                    <input id="light_position_y" type=text>
+                    <input id="light_position_z" type=text>
+                </div>
             </div>
+
+            <button id="apply_light_btn">Apply changes</button>
 
             <h3>Materials</h3>
+
             <div id="materials">
             </div>
+
+            <button id="add_material_btn">+</button>
+
             <div id="material_settings">
-                <input id="material_difffusion_red" type=text>
-                <input id="material_difffusion_green" type=text>
-                <input id="material_difffusion_blue" type=text>
+                <div id="material_diffusion">
+                    <p>diffusion :</p>
+                    <input id="material_diffusion_red" type=text>
+                    <input id="material_diffusion_green" type=text>
+                    <input id="material_diffusion_blue" type=text>
+                </div>
+                <div id="material_transparency">
+                    <p>transparency :</p>
+                    <input id="material_transparency_red" type=text>
+                    <input id="material_transparency_green" type=text>
+                    <input id="material_transparency_blue" type=text>
+                </div>
+                <div id="material_reflection">
+                    <p>reflection :</p>
+                    <input id="material_reflection_red" type=text>
+                    <input id="material_reflection_green" type=text>
+                    <input id="material_reflection_blue" type=text>
+                </div>
+                
+                <div id="material_refraction">
+                    <p>refraction :</p>
+                    <input id="material_refraction_red" type=text>
+                    <input id="material_refraction_green" type=text>
+                    <input id="material_refraction_blue" type=text>
+                </div>
             </div>
 
+            <button id="apply_material_btn">Apply changes</button>
+
             <h3>Boxels</h3>
+
             <div id="boxels">
             </div>
+
+            <button id="add_boxel_btn">+</button>
+
             <div id="boxel_settings">
                 <div id="boxel_position">
                     <p>position :</p>
@@ -54,7 +103,8 @@
                 </div>
             </div>
 
-            <button id="apply_btn">Apply changes</button>
+            <button id="apply_boxel_btn">Apply changes</button>
+
         </div>
         
     </body>

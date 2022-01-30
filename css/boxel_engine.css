@@ -3,6 +3,24 @@ body{
     background-color: beige;
 }
 
+input{
+    width: 50px;
+
+    background-color:rgb(50,50,50);
+    color: whitesmoke;
+
+    border-radius: 10px;
+    border-color: rgb(10,10,10);
+}
+
+button{
+    background-color:rgb(50,50,50);
+    color: whitesmoke;
+
+    border-radius: 5px;
+    border-color: rgb(10,10,10);
+}
+
 #view{
     position: absolute;
     top: 0%;
@@ -20,5 +38,12 @@ body{
     width: 30%;
     height: 100%;
 
+    overflow: scroll;
+    /* display:flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center; */
+
     background-color: darkslategray;
+    color: whitesmoke;
 }
