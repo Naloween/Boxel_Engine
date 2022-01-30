@@ -2,8 +2,9 @@
 // Lights
 
 let my_light = new Light(200, [1., 1., 1.], [30,30,30], 0);
+let my_light2 = new Light(100, [-1., -1., -1.], [30,30,32], 0);
 
-let lights = [my_light]
+let lights = [my_light, my_light2]
 
 // Materials
 let air_material = new Material([1,1,1], // Diffusion, i.e color
@@ -35,18 +36,18 @@ let world_boxel = new Boxel([0,0,0], // position
                             air_material, // material
                             null, //parent boxel
                             [], // inner boxels
-                            my_light); // Light
-let red_cube = new Boxel([22,22,22], [1,2,3], red_material, world_boxel, [], null)
-let mirror = new Boxel([25,22,22], [1,1,0.1], mirror_material, world_boxel, [],null)
-let glass = new Boxel([23.5,23.5,22], [0.1,2,2], glass_material, world_boxel, [],null)
-let cloud = new Boxel([10.,10.,15.], [20,20,3], ground_material, world_boxel, [],null)
-let littlecube = new Boxel([20,20,16], [2,1,0.1], red_material, cloud, [],null)
+                            [my_light, my_light2]); // inner lights
+let red_cube = new Boxel([22,22,22], [1,2,3], red_material, world_boxel, [], [])
+let mirror = new Boxel([25,22,22], [1,1,0.1], mirror_material, world_boxel, [],[])
+let glass = new Boxel([23.5,23.5,22], [0.1,2,2], glass_material, world_boxel, [],[])
+let cloud = new Boxel([10.,10.,15.], [20,20,3], ground_material, world_boxel, [],[])
+let littlecube = new Boxel([20,20,40], [2,1,1], red_material, world_boxel, [],[])
 
 world_boxel.inner_boxels.push(red_cube);
 world_boxel.inner_boxels.push(mirror);
 world_boxel.inner_boxels.push(glass);
 world_boxel.inner_boxels.push(cloud);
-cloud.inner_boxels.push(littlecube);
+world_boxel.inner_boxels.push(littlecube);
 
 let boxels = [world_boxel, red_cube, mirror, glass, cloud, littlecube];
 
