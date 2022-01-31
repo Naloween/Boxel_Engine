@@ -315,7 +315,6 @@ function castRayGPU(boxels, materials, lights, inner_boxels, inner_lights, ray_b
     return color;
 }
 
-
 function renderGPU(boxels, materials, lights, inner_boxels, inner_lights, width, height, fov, u, ux, uy, position, boxel_id, diaphragme, max_steps){
     
     
@@ -337,7 +336,7 @@ function renderGPU(boxels, materials, lights, inner_boxels, inner_lights, width,
 // Classes
 
 class Light{
-    constructor(power, color, position, parent){
+    constructor(power, color, position){
         this.power = power;
         this.color = color;
         this.position = position;
