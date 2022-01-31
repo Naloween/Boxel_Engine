@@ -1,14 +1,14 @@
 
 // Lights
 
-let my_light = new Light(200, [1., 1., 1.], [30,30,30]);
+let my_light = new Light(10000, [1., 1., 1.], [30,30,50]);
 let my_light2 = new Light(100, [-1., -1., -1.], [30,30,32]);
 
 let lights = [my_light, my_light2]
 
 // Materials
 let air_material = new Material([1,1,1], // Diffusion, i.e color
-                                [0.999,0.9993,0.9995], // Transparency percentage
+                                [0.9999,0.9999,0.9999], // Transparency percentage
                                 [0, 0, 0], // Reflection percentage
                                 [1, 1, 1]); // Refraction indice
 let red_material = new Material([1.,0.0,0.],
@@ -23,12 +23,12 @@ let glass_material = new Material([1.,0.0,1.],
                                 [0.5, 0.5, 0.5],
                                 [0, 0, 0],
                                 [1.1, 1.2, 1.3]);
-let ground_material = new Material([1., 1., 1.],
-                                [0.8, 0.8, 0.8],
+let cloud_material = new Material([1., 1., 1.],
+                                [0.99, 0.93, 0.9],
                                 [0, 0, 0],
                                 [1, 1, 1]);
 
-let materials = [air_material, red_material, mirror_material, glass_material, ground_material];
+let materials = [air_material, red_material, mirror_material, glass_material, cloud_material];
 
 // Boxels
 let world_boxel = new Boxel([0,0,0], // position
@@ -36,15 +36,15 @@ let world_boxel = new Boxel([0,0,0], // position
                             air_material, // material
                             null, //parent boxel
                             [], // inner boxels
-                            [my_light, my_light2]); // inner lights
+                            [my_light]); // inner lights
 let red_cube = new Boxel([22,22,22], [1,2,3], red_material, world_boxel, [], [])
 let mirror = new Boxel([25,22,22], [1,1,0.1], mirror_material, world_boxel, [],[])
 let glass = new Boxel([23.5,23.5,22], [0.1,2,2], glass_material, world_boxel, [],[])
-let cloud = new Boxel([10.,10.,15.], [20,20,3], ground_material, world_boxel, [],[])
+let cloud = new Boxel([10.,10.,20.], [100, 100, 15], cloud_material, world_boxel, [],[])
 
-world_boxel.inner_boxels.push(red_cube);
-world_boxel.inner_boxels.push(mirror);
-world_boxel.inner_boxels.push(glass);
+// world_boxel.inner_boxels.push(red_cube);
+// world_boxel.inner_boxels.push(mirror);
+// world_boxel.inner_boxels.push(glass);
 world_boxel.inner_boxels.push(cloud);
 
 let boxels = [world_boxel, red_cube, mirror, glass, cloud];
@@ -97,6 +97,10 @@ let element_boxel_size_z = document.getElementById("boxel_size_z");
 let element_boxel_material = document.getElementById("boxel_material");
 let element_boxel_parent = document.getElementById("boxel_parent");
 let element_boxel_light = document.getElementById("boxel_light");
+
+let element_position_x = document.getElementById("position_x");
+let element_position_y = document.getElementById("position_y");
+let element_position_z = document.getElementById("position_z");
 
 function show_elements(){
     let element_lights = document.getElementById("lights");
@@ -328,7 +332,7 @@ function nextFrame(timestamp){
 
     //fps
     let fps = document.getElementById("fps");
-    fps.innerText = 1/dt + "fps";
+    fps.innerText = (1/dt).toFixed(2) + "fps";
     
     // Controls
     let new_position = camera.position;
@@ -360,6 +364,11 @@ function nextFrame(timestamp){
         teta = teta_click - sensibilite * dx;
         phi = phi_click - sensibilite * dy;
     }
+
+    //update infos
+    element_position_x.innerText = "x: " + new_position[0].toFixed(2);
+    element_position_y.innerText = "y: " + new_position[1].toFixed(2);
+    element_position_z.innerText = "z: " + new_position[2].toFixed(2);
 
     //draw frame
     boxel_engine.set_camera_position(new_position);

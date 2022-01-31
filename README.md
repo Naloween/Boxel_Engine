@@ -5,6 +5,8 @@
 An engine on browser that uses simplified raytracing running on GPU. This engine doesn't use triangles as models but boxels.
 
 <img src="images/screen_engine.png">
+<img src="images/screen2.png">
+<img src="images/screen3.png">
 
 ## How to use it ?
 
