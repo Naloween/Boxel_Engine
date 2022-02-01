@@ -477,9 +477,9 @@ class BoxelEngine{
     }
 
     set_camera_orientation(teta, phi){
-        camera.teta = teta;
-        camera.phi = phi;
-        camera.update();
+        this.camera.teta = teta;
+        this.camera.phi = phi;
+        this.camera.update();
     }
 
     get_boxel(){
