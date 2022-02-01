@@ -473,7 +473,7 @@ class BoxelEngine{
 
     set_camera_position(position){
         this.camera.position = position;
-        boxel_engine.current_boxel = boxel_engine.get_boxel();
+        this.current_boxel = this.get_boxel();
     }
 
     set_camera_orientation(teta, phi){
