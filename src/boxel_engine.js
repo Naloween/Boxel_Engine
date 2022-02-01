@@ -503,6 +503,7 @@ class BoxelEngine{
 
     build_arrays(){
 
+        // Réinitialisation
         for (let gpu_boxel of this.boxels_on_gpu){
             gpu_boxel.id = -1;
             if (gpu_boxel.material != null){
@@ -520,8 +521,8 @@ class BoxelEngine{
         this.inner_boxels_array = [];
         this.inner_lights_array = [];
 
-        this.add_boxel_to_array(this.world_boxel);
-        
+        // adding world boxel to GPU
+        this.add_boxel_to_array(this.world_boxel);   
     }
 
     add_boxel_to_array(boxel){
@@ -611,6 +612,48 @@ class BoxelEngine{
                 }
             }
             this.process_lights(inner_boxel);
+        }
+    }
+
+    add_boxel_to(boxel, parent_boxel){
+        parent_boxel.inner_boxels.push(boxel);
+        
+        if (parent_boxel.id >= 0){ //Si le boxel est présent sur le GPU
+            // //update les données du GPU
+            // if (boxel.id < 0){ //si le boxel n'est pas sur le GPU on l'ajoute
+            //     this.add_boxel_to_array(boxel);
+            // }
+
+            // let inner_boxels_id = this.boxels_array[parent_boxel.id][26]
+            // this.inner_boxels_array[inner_boxels_id].push(boxel.id);
+            // this.inner_boxels_array[inner_boxels_id][0] += 1;
+
+            this.build_arrays();
+            this.process_lights(parent_boxel);
+        }
+    }
+
+    remove_boxel_from(boxel, parent_boxel){
+        for (let k=0; k < parent_boxel.inner_boxels.length; k++){
+            if (parent_boxel.inner_boxels[k] == boxel){
+                parent_boxel.inner_boxels.splice(k, 1);
+                break;
+            }
+        }
+
+        if (parent_boxel.id >= 0 && boxel.id >= 0){ // si le parent boxel est sur le GPU on supprime aussi sur le GPU
+            // let inner_boxels_id = this.boxels_array[parent_boxel.id][26]
+            // let inner_boxels_list = this.inner_boxels_array[inner_boxels_id]
+            
+            // for (let k=0; k < inner_boxels_list[0]; k++){
+            //     if (inner_boxels_list[1 + k] == boxel.id){
+            //         inner_boxels_list.splice(k, 1);
+            //         //inner_boxels_list[0] -= 1;
+            //         break;
+            //     }
+            // }
+            this.build_arrays();
+            this.process_lights(parent_boxel);
         }
     }
 }
