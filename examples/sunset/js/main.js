@@ -1,34 +1,21 @@
 
 // Lights
 
-let my_light = new Light(10000, [1., 1., 1.], [30,30,50]);
-let my_light2 = new Light(100, [-1., -1., -1.], [30,30,32]);
+let my_light = new Light(20000, [1., 1., 1.], [100,100,150]);
 
-let lights = [my_light, my_light2]
+let lights = [my_light]
 
 // Materials
 let air_material = new Material([1,1,1], // Diffusion, i.e color
                                 [0.9999,0.9999,0.9999], // Transparency percentage
                                 [0, 0, 0], // Reflection percentage
                                 [1, 1, 1]); // Refraction indice
-let red_material = new Material([1.,0.0,0.],
-                                [0.5, 0.5, 1.],
-                                [0, 0, 0],
-                                [1, 1, 1]);
-let mirror_material = new Material([1.,1.0,1.],
-                                [0,0,0],
-                                [1.,1.0,1.0],
-                                [1, 1, 1]);
-let glass_material = new Material([1.,0.0,1.],
-                                [0.5, 0.5, 0.5],
-                                [0, 0, 0],
-                                [1.1, 1.2, 1.3]);
 let cloud_material = new Material([1., 1., 1.],
                                 [0.99, 0.93, 0.9],
                                 [0, 0, 0],
                                 [1, 1, 1]);
 
-let materials = [air_material, red_material, mirror_material, glass_material, cloud_material];
+let materials = [air_material, cloud_material];
 
 // Boxels
 let world_boxel = new Boxel([0,0,0], // position
@@ -37,17 +24,11 @@ let world_boxel = new Boxel([0,0,0], // position
                             null, //parent boxel
                             [], // inner boxels
                             [my_light]); // inner lights
-let red_cube = new Boxel([22,22,22], [1,2,3], red_material, world_boxel, [], [])
-let mirror = new Boxel([25,22,22], [1,1,0.1], mirror_material, world_boxel, [],[])
-let glass = new Boxel([23.5,23.5,22], [0.1,2,2], glass_material, world_boxel, [],[])
 let cloud = new Boxel([10.,10.,20.], [100, 100, 15], cloud_material, world_boxel, [],[])
 
-// world_boxel.inner_boxels.push(red_cube);
-// world_boxel.inner_boxels.push(mirror);
-// world_boxel.inner_boxels.push(glass);
 world_boxel.inner_boxels.push(cloud);
 
-let boxels = [world_boxel, red_cube, mirror, glass, cloud];
+let boxels = [world_boxel, cloud];
 
 let width = 1000;
 let height = 600;
