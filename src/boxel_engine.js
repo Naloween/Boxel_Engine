@@ -423,7 +423,8 @@ class Camera{
         this.gpu.addFunction(castRayGPU);
         this.render = this.gpu.createKernel(renderGPU)
         .setOutput([width, height])
-        .setGraphical(true); 
+        .setGraphical(true)
+        .setDynamicArguments(true); 
 
         element_to_add_canvas.appendChild(this.render.canvas);
     }
@@ -616,6 +617,7 @@ class BoxelEngine{
     }
 
     add_boxel_to(boxel, parent_boxel){
+        boxel.parent_boxel = parent_boxel;
         parent_boxel.inner_boxels.push(boxel);
         
         if (parent_boxel.id >= 0){ //Si le boxel est présent sur le GPU
@@ -637,6 +639,7 @@ class BoxelEngine{
         for (let k=0; k < parent_boxel.inner_boxels.length; k++){
             if (parent_boxel.inner_boxels[k] == boxel){
                 parent_boxel.inner_boxels.splice(k, 1);
+                boxel.parent_boxel = null;
                 break;
             }
         }
