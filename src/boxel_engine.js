@@ -612,25 +612,13 @@ class BoxelEngine{
                     }
 
                     // Eclairage à partir d'une face
-                    for (let parent_face=0; parent_face < 6; parent_face++){
-                        let center_face = [parent_boxel.position[0] + parent_boxel.sizes[0]/2,
-                        parent_boxel.position[1] + parent_boxel.sizes[1]/2,
-                        parent_boxel.position[2] + parent_boxel.sizes[2]/2];
-
-                        if (parent_face%2 == 1){
-                            center_face[direction] += parent_boxel.sizes[direction]/2;
-                        } else {
-                            center_face[direction] -= parent_boxel.sizes[direction]/2;
-                        }
-                        let u = substract(center_face, P);
-                        let d = Math.sqrt(scal(u, u));
-                        u = mul(1/d, u);
-
-                        let coef = scal(normale, u);
-                        if (coef >=0){
-                            inner_boxel.lighting[face + 6 * channel] += coef * parent_boxel.lighting[parent_face] * parent_boxel.transparency**d;
-                        }
+                    // éclairée en réalité uniquement par la face du parent boxel correspondante à la face que l'on veut éclairée
+                    let d = parent_boxel.position[direction] - P[direction]
+                    if (face%2 == 1){
+                        d += parent_boxel.sizes[direction];
                     }
+                    d = Math.abs(d);
+                    inner_boxel.lighting[face + 6 * channel] += parent_boxel.lighting[face + 6 * channel] * parent_boxel.material.transparency[channel]**d;
                 }
             }
             this.process_lights(inner_boxel);
