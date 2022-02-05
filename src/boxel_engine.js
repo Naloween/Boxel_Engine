@@ -317,9 +317,16 @@ function castRayGPU(boxels, materials, lights, inner_boxels, inner_lights, ray_b
 
 function renderGPU(boxels, materials, lights, inner_boxels, inner_lights, width, height, fov, u, ux, uy, position, boxel_id, diaphragme, max_steps){
     
-    
-    let dx = fov * (this.thread.x - width/2) ;
-    let dy = fov * ((height - this.thread.y) - height/2);
+    let x = this.thread.x % (4*width) / 4;
+    let y = this.thread.x / (4*width);
+    let z = this.thread.x % 4
+
+    if (z == 3){
+        return 255;
+    }
+
+    let dx = fov * (x - width/2) ;
+    let dy = fov * (y - height/2);
 
     let direction = [u[0] - dx * ux[0] - dy * uy[0],
                     u[1] - dx * ux[1] - dy * uy[1],
@@ -327,10 +334,8 @@ function renderGPU(boxels, materials, lights, inner_boxels, inner_lights, width,
     let n = Math.sqrt(direction[0]*direction[0] + direction[1]*direction[1] + direction[2]*direction[2]);
     direction = [direction[0]/n, direction[1]/n, direction[2]/n]
 
-    let r = castRayGPU(boxels, materials, lights, inner_boxels, inner_lights, boxel_id, [position[0], position[1], position[2]], direction, 0, max_steps);
-    let g = castRayGPU(boxels, materials, lights, inner_boxels, inner_lights, boxel_id, [position[0], position[1], position[2]], direction, 1, max_steps);
-    let b = castRayGPU(boxels, materials, lights, inner_boxels, inner_lights, boxel_id, [position[0], position[1], position[2]], direction, 2, max_steps);
-    this.color(diaphragme * r, diaphragme * g, diaphragme * b, 1)
+    let channel = 255 * diaphragme * castRayGPU(boxels, materials, lights, inner_boxels, inner_lights, boxel_id, [position[0], position[1], position[2]], direction, z, max_steps);
+    return channel;
 }
 
 // Classes
@@ -400,9 +405,10 @@ class Boxel{
 }
 
 class Camera{
-    constructor(width, height, element_to_add_canvas){
-        this.width = width;
-        this.height = height;
+    constructor(canvas){
+        this.width = canvas.width;
+        this.height = canvas.height;
+        this.ctx = canvas.getContext("2d");
 
         this.position = [0.0,0.0,0.0];
         this.teta = 0.0;
@@ -422,11 +428,10 @@ class Camera{
         this.gpu.addFunction(intersectionGPU);
         this.gpu.addFunction(castRayGPU);
         this.render = this.gpu.createKernel(renderGPU)
-        .setOutput([width, height])
-        .setGraphical(true)
+        .setOutput([this.width * this.height * 4])
         .setDynamicArguments(true); 
 
-        element_to_add_canvas.appendChild(this.render.canvas);
+        this.image_data = this.ctx.createImageData(this.width, this.height);
     }
 
     update(){        
@@ -446,10 +451,15 @@ class Camera{
     }
 
     drawFrame(boxels, materials, lights, inner_boxels, inner_lights, boxel_id){
-        this.render(boxels, materials, lights, inner_boxels, inner_lights,
+        let buffer = this.render(boxels, materials, lights, inner_boxels, inner_lights,
             this.width, this.height, this.FOV,
             this.u, this.ux, this.uy,
             this.position, boxel_id, this.diaphragme, this.max_steps);
+        
+        //console.log(buffer);
+        
+        this.image_data.data.set(buffer);
+        this.ctx.putImageData(this.image_data, 0, 0);
     }
 }
 

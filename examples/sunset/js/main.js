@@ -30,10 +30,11 @@ world_boxel.inner_boxels.push(cloud);
 
 let boxels = [world_boxel, cloud];
 
-let width = 1000;
-let height = 600;
+let canvas = document.getElementById("canvas");
+canvas.width = 1000;
+canvas.height = 600;
 
-let camera = new Camera(width, height, document.getElementById("view"));
+let camera = new Camera(canvas);
 camera.position = [20,20,30];
 
 let boxel_engine = new BoxelEngine(camera, world_boxel);
