@@ -400,7 +400,7 @@ class Boxel{
 }
 
 class Camera{
-    constructor(width, height, element_to_add_canvas){
+    constructor(width, height, element_to_add_canvas, fov=1){
         this.width = width;
         this.height = height;
 
@@ -408,7 +408,7 @@ class Camera{
         this.teta = 0.0;
         this.phi = Math.PI/2.0;
 
-        this.FOV = 0.001;
+        this.fov = fov/1000;
         this.diaphragme = 1;
         this.max_steps = 10;
 
@@ -447,7 +447,7 @@ class Camera{
 
     drawFrame(boxels, materials, lights, inner_boxels, inner_lights, boxel_id){
         this.render(boxels, materials, lights, inner_boxels, inner_lights,
-            this.width, this.height, this.FOV,
+            this.width, this.height, this.fov,
             this.u, this.ux, this.uy,
             this.position, boxel_id, this.diaphragme, this.max_steps);
     }
