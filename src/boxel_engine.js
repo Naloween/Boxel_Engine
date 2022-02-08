@@ -317,7 +317,6 @@ function castRayGPU(boxels, materials, lights, inner_boxels, inner_lights, ray_b
 
 function renderGPU(boxels, materials, lights, inner_boxels, inner_lights, width, height, fov, u, ux, uy, position, boxel_id, diaphragme, max_steps){
     
-    
     let dx = fov * (this.thread.x - width/2) ;
     let dy = fov * ((height - this.thread.y) - height/2);
 
@@ -523,7 +522,11 @@ class BoxelEngine{
         this.inner_lights_array = [];
 
         // adding world boxel to GPU
-        this.add_boxel_to_array(this.world_boxel);   
+        this.add_boxel_to_array(this.world_boxel);
+        
+        if (this.lights_array.length == 0){
+            this.lights_array = [0];
+        }
     }
 
     add_boxel_to_array(boxel){
