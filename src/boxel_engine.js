@@ -63,7 +63,7 @@ function intersectionGPU(boxel_position, boxel_sizes, cast_point, direction){
     if (t_min > t_max || t_max < 0.) {
         return [-1, -1]
     } else {
-        if (t_min <= 0.){
+        if (t_min < 0.01){
             return [t_max, face_max]
         } else {
             return [t_min, face_min]
