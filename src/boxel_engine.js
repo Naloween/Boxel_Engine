@@ -63,7 +63,7 @@ function intersectionGPU(boxel_position, boxel_sizes, cast_point, direction){
     if (t_min > t_max || t_max < 0.) {
         return [-1, -1]
     } else {
-        if (t_min < 0.){
+        if (t_min <= 0.){
             return [t_max, face_max]
         } else {
             return [t_min, face_min]
@@ -132,8 +132,6 @@ function castRayGPU(boxels, materials, lights, inner_boxels, inner_lights, ray_b
                     potential_next_boxel_id = inner_boxel_id;
                 }
             }
-    
-            t += 0.0001;
     
             if (potential_next_boxel_id < 0){
                 potential_next_boxel_id = boxels[boxel_id][25]; // set next boxel to parent boxel  
@@ -242,7 +240,7 @@ function castRayGPU(boxels, materials, lights, inner_boxels, inner_lights, ray_b
                     direction_reflection = [current_direction[0], current_direction[1], -current_direction[2]];
                 }
     
-                let t_reflection = t - 0.0002;
+                let t_reflection = t - 0.01;
                     
                 let cast_point_reflection = [current_cast_point[0] + t_reflection * current_direction[0],
                                             current_cast_point[1] + t_reflection * current_direction[1],
@@ -399,7 +397,7 @@ class Boxel{
 }
 
 class Camera{
-    constructor(width, height, element_to_add_canvas, fov=1){
+    constructor(width, height, element_to_add_canvas, fov=1, max_steps=10){
         this.width = width;
         this.height = height;
 
@@ -409,7 +407,7 @@ class Camera{
 
         this.fov = fov/1000;
         this.diaphragme = 1;
-        this.max_steps = 10;
+        this.max_steps = max_steps;
 
         this.u = new Array(3);
         this.ux = new Array(3);
@@ -671,5 +669,10 @@ class BoxelEngine{
             this.process_lights(parent_boxel);
             this.build_arrays();
         }
+    }
+
+    update(){
+        this.process_lights(this.world_boxel);
+        this.build_arrays();
     }
 }
