@@ -1,16 +1,20 @@
 
+import * as be from "/modules/boxel_engine.js";
+
+console.log("Works !");
+
 // Lights
 
-let my_light = new Light(20000, [1., 1., 1.], [100,100,150]);
+let my_light = new be.Light(20000, [1., 1., 1.], [100,100,150]);
 
 let lights = [my_light]
 
 // Materials
-let air_material = new Material([1,1,1], // Diffusion, i.e color
+let air_material = new be.Material([1,1,1], // Diffusion, i.e color
                                 [0.9999,0.9999,0.9999], // Transparency percentage
                                 [0, 0, 0], // Reflection percentage
                                 [1, 1, 1]); // Refraction indice
-let cloud_material = new Material([1., 1., 1.],
+let cloud_material = new be.Material([1., 1., 1.],
                                 [0.99, 0.93, 0.9],
                                 [0, 0, 0],
                                 [1, 1, 1]);
@@ -18,13 +22,13 @@ let cloud_material = new Material([1., 1., 1.],
 let materials = [air_material, cloud_material];
 
 // Boxels
-let world_boxel = new Boxel([0,0,0], // position
+let world_boxel = new be.Boxel([0,0,0], // position
                             [1000,1000,1000], // sizes
                             air_material, // material
                             null, //parent boxel
                             [], // inner boxels
                             [my_light]); // inner lights
-let cloud = new Boxel([10.,10.,20.], [100, 100, 15], cloud_material, world_boxel, [],[])
+let cloud = new be.Boxel([10.,10.,20.], [100, 100, 15], cloud_material, world_boxel, [],[])
 
 world_boxel.inner_boxels.push(cloud);
 
@@ -33,10 +37,10 @@ let boxels = [world_boxel, cloud];
 let width = 1000;
 let height = 600;
 
-let camera = new Camera(width, height, document.getElementById("view"));
+let camera = new be.Camera(width, height, document.getElementById("view"));
 camera.position = [20,20,30];
 
-let boxel_engine = new BoxelEngine(camera, world_boxel);
+let boxel_engine = new be.BoxelEngine(camera, world_boxel);
 
 // creator
 
