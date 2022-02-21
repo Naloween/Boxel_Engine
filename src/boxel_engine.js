@@ -60,13 +60,15 @@ function intersectionGPU(boxel_position, boxel_sizes, cast_point, direction){
         }
     }
 
+    // Return [distance to face, face intersected, is_cast_point_inside (-1 or 1)]
+
     if (t_min > t_max || t_max < 0.) {
-        return [-1, -1]
+        return [-1, -1, -1]
     } else {
-        if (t_min < 0.01){
-            return [t_max, face_max]
+        if (t_min < 0.01){ //Si on est très proche du bord on considère que l'on est à l'intérieur
+            return [t_max, face_max, 1]
         } else {
-            return [t_min, face_min]
+            return [t_min, face_min, -1]
         }
     }
     
@@ -98,6 +100,7 @@ function castRayGPU(boxels, materials, lights, inner_boxels, inner_lights, ray_b
         let current_direction = next_ray_direction;
         let distance = 0.;
         let nb_steps = 0;
+        let previous_boxel_id = -1;
 
         while (nb_steps < max_steps) {
     
@@ -108,7 +111,13 @@ function castRayGPU(boxels, materials, lights, inner_boxels, inner_lights, ray_b
                 current_cast_point, current_direction);
             let t = res[0];
             let face = res[1];
-            if (t < 0) {
+            let is_inside = res[2];
+            if (is_inside < 0) {
+                next_ray = true;
+                next_ray_boxel_id = boxels[boxel_id][25]; // set to parent boxel
+                next_ray_cast_point = current_cast_point;
+                next_ray_percentage = ray_percentage;
+                next_ray_direction = current_direction;
                 break;
             }
     
@@ -119,18 +128,36 @@ function castRayGPU(boxels, materials, lights, inner_boxels, inner_lights, ray_b
             let nb_inner_boxels = inner_boxels[inner_boxels_index];
             for (let k=0; k<nb_inner_boxels; k++){
                 let inner_boxel_id = inner_boxels[inner_boxels_index + 1 + k];
-                let res = intersectionGPU(
-                    [boxels[inner_boxel_id][0], boxels[inner_boxel_id][1], boxels[inner_boxel_id][2]],
-                    [boxels[inner_boxel_id][3], boxels[inner_boxel_id][4], boxels[inner_boxel_id][5]],
-                    current_cast_point, current_direction);
-                let t2 = res[0];
-                let face2 = res[1];
+                if (inner_boxel_id != previous_boxel_id){
+                    let res = intersectionGPU(
+                        [boxels[inner_boxel_id][0], boxels[inner_boxel_id][1], boxels[inner_boxel_id][2]],
+                        [boxels[inner_boxel_id][3], boxels[inner_boxel_id][4], boxels[inner_boxel_id][5]],
+                        current_cast_point, current_direction);
+                    let t2 = res[0];
+                    let face2 = res[1];
+                    let is_inside2 = res[2];
 
-                if (t2 > 0 && t2 < t){
-                    t = t2;
-                    face = face2;
-                    potential_next_boxel_id = inner_boxel_id;
+                    if(is_inside2 > 0){
+                        next_ray = true;
+                        next_ray_boxel_id = inner_boxel_id;
+                        next_ray_cast_point = current_cast_point;
+                        next_ray_percentage = ray_percentage;
+                        next_ray_direction = current_direction;
+                        break;
+                    }
+
+                    if (t2 > 0 && t2 < t){
+                        t = t2;
+                        face = face2;
+                        potential_next_boxel_id = inner_boxel_id;
+                    }
                 }
+            }
+
+            previous_boxel_id = boxel_id;
+
+            if (next_ray){ //if we are inside an inner boxel we restart the ray casting
+                break;
             }
     
             if (potential_next_boxel_id < 0){
@@ -309,7 +336,7 @@ function castRayGPU(boxels, materials, lights, inner_boxels, inner_lights, ray_b
             }
         }
     }
-    
+
     return color;
 }
 
