@@ -165,6 +165,8 @@ function castRayGPU(boxels, materials, lights, inner_boxels, inner_lights, ray_b
             }
 
             //Point d'arrivée du ray
+            
+            t += 0.1;
 
             let next_cast_point = [current_cast_point[0] + t * current_direction[0],
             current_cast_point[1] + t * current_direction[1],
@@ -490,8 +492,9 @@ class BoxelEngine{
         this.lights_array = [];
         this.materials_array = [];
         this.boxels_array = [];
-        this.inner_boxels_array = [];
         this.inner_lights_array = [];
+        this.inner_boxels_array = [];
+        this.inner_boxels_array_spaces = [];
 
         this.build_arrays();
     }
@@ -566,7 +569,9 @@ class BoxelEngine{
         }
 
         let inner_lights_id = this.inner_lights_array.length;
-        this.inner_lights_array = this.inner_lights_array.concat(inner_lights_list);
+        for (let k=0; k<inner_lights_list.length; k++){
+            this.inner_lights_array.push(inner_lights_list[k]);
+        }
 
         if (boxel.material.id < 0){ // Si le material n'est pas déjà ajoutée
             boxel.material.id = this.materials_array.length;
@@ -580,7 +585,9 @@ class BoxelEngine{
         }
 
         let inner_boxels_id = this.inner_boxels_array.length;
-        this.inner_boxels_array = this.inner_boxels_array.concat(inner_boxels_list);
+        for (let k=0; k<inner_boxels_list.length; k++){
+            this.inner_boxels_array.push(inner_boxels_list[k]);
+        }
 
         boxel.id = this.boxels_array.length;
         let boxel_array = boxel.toArray();
@@ -633,8 +640,8 @@ class BoxelEngine{
                         let d = Math.sqrt(scal(u, u));
                         u = mul(1/d, u);
 
-                        let coef = scal(normale, u);
-                        if (coef >=0){
+                        let coef = Math.abs(scal(normale, u));
+                        if (coef >= 0){
                             inner_boxel.lighting[face + 6 * channel] += coef * light.power * light.color[channel]/(d*d);
                         }
                     }
@@ -658,17 +665,49 @@ class BoxelEngine{
         parent_boxel.inner_boxels.push(boxel);
         
         if (parent_boxel.id >= 0){ //Si le boxel est présent sur le GPU
-            // //update les données du GPU
-            // if (boxel.id < 0){ //si le boxel n'est pas sur le GPU on l'ajoute
-            //     this.add_boxel_to_array(boxel);
-            // }
-
-            // let inner_boxels_id = this.boxels_array[parent_boxel.id][26]
-            // this.inner_boxels_array[inner_boxels_id].push(boxel.id);
-            // this.inner_boxels_array[inner_boxels_id][0] += 1;
-
+            // update light
             this.process_lights(parent_boxel);
-            this.build_arrays();
+
+            //update les données du GPU
+            if (boxel.id < 0){ //si le boxel n'est pas sur le GPU on l'ajoute
+                this.add_boxel_to_array(boxel);
+            }
+
+            let inner_boxels_id = this.boxels_array[parent_boxel.id][26];
+            let inner_boxels_length = this.inner_boxels_array[inner_boxels_id];
+            let inner_boxels = this.inner_boxels_array.slice(inner_boxels_id, inner_boxels_id + inner_boxels_length);
+            this.inner_boxels_array_spaces.push([inner_boxels_id, inner_boxels_length]);
+            
+            let new_inner_boxels_id = this.inner_boxels_array.length;
+            //TODO : if some spaces before move there and not at the end
+
+            //Move data to free space
+            if (new_inner_boxels_id == this.inner_boxels_array.length){
+                this.inner_boxels_array.push(this.inner_boxels_array[inner_boxels_id]+1);
+                for (let k=0; k<inner_boxels_length; k++){
+                    this.inner_boxels_array.push(this.inner_boxels_array[1+inner_boxels_id+k]);
+                }
+                this.inner_boxels_array.push(boxel.id);
+            } else {
+                this.inner_boxels_array[new_inner_boxels_id] = this.inner_boxels_array[inner_boxels_id]+1;
+                for (let k=0; k<inner_boxels_length; k++){
+                    this.inner_boxels_array[1 +new_inner_boxels_id + k] = this.inner_boxels_array[inner_boxels_id+k];
+                }
+                this.inner_boxels_array[1 + inner_boxels_length] = boxel.id;
+            }
+
+            //changing index of inner_boxels in boxels data on GPU
+            this.boxels_array[parent_boxel.id][26] = new_inner_boxels_id;
+            
+            // this.boxels_array[parent_boxel.id][26] = inner_boxels_id;
+            
+            // this.inner_boxels_array.splice(inner_boxels_id+1, 0, boxel.id);
+            // this.inner_boxels_array[inner_boxels_id] += 1;
+
+            console.log(this.inner_boxels_array);
+
+            // this.process_lights(parent_boxel);
+            // this.build_arrays();
         }
     }
 

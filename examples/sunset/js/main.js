@@ -10,25 +10,29 @@ let my_light = new be.Light(20000, [1., 1., 1.], [100,100,150]);
 let lights = [my_light]
 
 // Materials
-let air_material = new be.Material([1,1,1], // Diffusion, i.e color
+let universe_material = new be.Material([1,1,1], // Diffusion, i.e color
                                 [0.9999,0.9999,0.9999], // Transparency percentage
                                 [0, 0, 0], // Reflection percentage
                                 [1, 1, 1]); // Refraction indice
-let cloud_material = new be.Material([1., 1., 1.],
+let air_material = new be.Material([1., 1., 1.],
                                 [0.99, 0.93, 0.9],
                                 [0, 0, 0],
                                 [1, 1, 1]);
+let cube_material = new be.Material([1., 1., 1.],
+                                    [0, 0, 0],
+                                    [0, 0, 0],
+                                    [1, 1, 1]);
 
-let materials = [air_material, cloud_material];
+let materials = [universe_material, air_material];
 
 // Boxels
 let world_boxel = new be.Boxel([0,0,0], // position
                             [1000,1000,1000], // sizes
-                            air_material, // material
+                            universe_material, // material
                             null, //parent boxel
                             [], // inner boxels
                             [my_light]); // inner lights
-let cloud = new be.Boxel([10.,10.,20.], [100, 100, 15], cloud_material, world_boxel, [],[])
+let cloud = new be.Boxel([10.,10.,20.], [100, 100, 15], air_material, world_boxel, [],[])
 
 world_boxel.inner_boxels.push(cloud);
 
@@ -45,12 +49,18 @@ let boxel_engine = new be.BoxelEngine(camera, world_boxel);
 // creator
 
 let selected_light = my_light;
-let selected_material = air_material;
+let selected_material = universe_material;
 let selected_boxel = world_boxel;
 
 let add_light_btn = document.getElementById("add_light_btn");
 let add_material_btn = document.getElementById("add_material_btn");
 let add_boxel_btn = document.getElementById("add_boxel_btn");
+add_boxel_btn.addEventListener("click",(event)=>{
+    if (event.button == 0){
+        let new_boxel = new be.Boxel(boxel_engine.camera.position.slice(), [1, 1, 1], cube_material, boxel_engine.current_boxel, [],[]);
+        boxel_engine.add_boxel_to(new_boxel, boxel_engine.current_boxel);
+    }
+});
 
 let element_light_power = document.getElementById("light_power");
 let element_light_color_red = document.getElementById("light_color_red");
